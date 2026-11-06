@@ -16,7 +16,7 @@
                                         <option selected disabled value="">-- Pilih Role --</option>
                                         <option value="Director">Director</option>
                                         <option value="Manager">Manager</option>
-                                        <option value="Manager">Ass. Manager</option>
+                                        <option value="Assistant Manager">Assistant Manager</option>
                                         <option value="Chiev">Chiev</option>
                                         <option value="Supervison">Supervison</option>
                                         <option value="Staff">Staff</option>
