@@ -28,18 +28,23 @@ class QcoController extends Controller
         // Cek manual department_id (misal: hanya departemen dengan ID 1 yang boleh akses)
 
         $currentMonth = $request->input('month') ? $request->input('month') . '-01' : Carbon::now()->format('Y-m-d');
+        $cell = $request->input('cell') ? $request->input('cell'): "";
         $get_user = User::get();
         // Ambil data qco berdasarkan rentang bulan yang sedang aktif di kalender
         $start = Carbon::parse($currentMonth)->startOfMonth()->startOfWeek(Carbon::SUNDAY);
         $end = Carbon::parse($currentMonth)->endOfMonth()->endOfWeek(Carbon::SATURDAY);
 
         $qcoList = qco::with(['user', 'user.department', 'user.role','preparations'])
-                ->whereBetween('change_over_date', [$start, $end])
-                ->whereHas('user.department', function ($query) {
-                    // Ganti 'PLANNER' dengan nama department yang ingin dicari
-                    $query->where('nama', 'PLANNER');
-                })
-                ->get();
+                    ->whereBetween('change_over_date', [$start, $end])
+                    ->whereHas('user.department', function ($query) {
+                        // Ganti 'PLANNER' dengan nama department yang ingin dicari
+                        $query->where('nama', 'PLANNER');
+                    })
+                    // Tambahkan kondisi ini untuk memfilter cell secara dinamis
+                    ->when($cell, function ($query, $cell) {
+                        return $query->where('cell', $cell);
+                    })
+                    ->get();
         // 2. Filter / buang data berdasarkan department dan stage-nya
         if ($department === 'DEVELOPMENT') {
             $qcoList = $qcoList->reject(function ($item) {

@@ -25,15 +25,37 @@
             <div class="row">
                 <div class="card shadow-sm">
                     <!-- Header Card Utama & Nav Tabs (Di luar tab-content agar tetap diam di atas) -->
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <div
+                        class="card-header bg-white d-flex align-items-center justify-content-between py-3 flex-wrap gap-2">
+                        <!-- Judul di Kiri -->
                         <h3 class="card-title mb-0">Kalender Change Over</h3>
-                        <div class="btn-group">
-                            <a href="?month={{ \Carbon\Carbon::parse($currentMonth ?? now())->subMonth()->format('Y-m') }}"
+
+                        <!-- Month Navigation di Tengah -->
+                        <div class="btn-group mx-auto">
+                            <a href="?month={{ \Carbon\Carbon::parse($currentMonth ?? now())->subMonth()->format('Y-m') }}{{ request('cell') ? '&cell=' . request('cell') : '' }}"
                                 class="btn btn-sm btn-outline-secondary">&laquo; Prev</a>
                             <span
                                 class="btn btn-sm btn-light disabled fw-bold">{{ \Carbon\Carbon::parse($currentMonth ?? now())->translatedFormat('F Y') }}</span>
-                            <a href="?month={{ \Carbon\Carbon::parse($currentMonth ?? now())->addMonth()->format('Y-m') }}"
+                            <a href="?month={{ \Carbon\Carbon::parse($currentMonth ?? now())->addMonth()->format('Y-m') }}{{ request('cell') ? '&cell=' . request('cell') : '' }}"
                                 class="btn btn-sm btn-outline-secondary">Next &raquo;</a>
+                        </div>
+
+                        <!-- Search Select dengan Kirim Bulan & Cell Sekaligus -->
+                        <div class="d-flex align-items-center gap-1">
+                            <select name="cell" id="cell" class="form-select form-select-sm"
+                                style="min-width: 180px;"
+                                onchange="window.location.href='?month={{ \Carbon\Carbon::parse($currentMonth ?? now())->format('Y-m') }}&cell=' + this.value">
+                                <option value="">-- Pilih Cell --</option>
+                                @foreach ($cell as $a)
+                                    <option value="{{ $a->id }}" {{ request('cell') == $a->id ? 'selected' : '' }}>
+                                        {{ $a->area }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @if (request('cell'))
+                                <a href="?month={{ \Carbon\Carbon::parse($currentMonth ?? now())->format('Y-m') }}"
+                                    class="btn btn-sm btn-outline-danger" title="Reset Filter">&times;</a>
+                            @endif
                         </div>
                     </div>
 
