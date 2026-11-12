@@ -299,7 +299,6 @@ class qcoDashboardController extends Controller
 
         $qco = qco::where('id', $id_qco_update)->first();
 
-        // Cek apakah data ditemukan (Hapus return $qco di atas agar pengecekan ini berfungsi)
         if (!$qco) {
             return response()->json([
                 'status' => 'error',
@@ -307,8 +306,7 @@ class qcoDashboardController extends Controller
             ], 404);
         }
 
-
-        // Perbaikan: gunakan $id_qco_update sesuai variabel di atas
+        // Ubah status record lama menjadi CANCEL
         qco::where('id', $id_qco_update)->update(['status' => "CANCEL"]);
 
         try {
@@ -318,8 +316,11 @@ class qcoDashboardController extends Controller
                 'model' => $edit_model,
                 'cell' => $qco->cell,
                 'stage' => $qco->stage,
-                'option'=> 'Update',
-                'model_lama'=>$qco->model
+                'status_plan' => 'rescheduled', // <-- SET STATUS PLAN
+                'parent_id'   => $qco->id,      // <-- ISI PARENT ID DARI ID LAMA
+                'option'      => 'Update',
+                'model_lama'  => $qco->model,
+                'tanggal_lama' => $qco->change_over_date
             ]);
 
             return response()->json([

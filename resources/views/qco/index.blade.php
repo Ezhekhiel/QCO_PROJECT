@@ -220,18 +220,39 @@
 
                                             @foreach ($dayEvents as $qco)
                                                 @php
-                                                    if ($qco->completion == 100) {
-                                                        $color_status = 'bg-success text-white';
-                                                    } elseif ($qco->completion >= 50) {
-                                                        $color_status = 'bg-warning text-dark';
+                                                    // Ambil nama area cell jika relasinya ada (asumsi relasi cell_info ada)
+                                                    $cellName = $qco->cell_info->area ?? 'Cell ' . $qco->cell;
+
+                                                    if ($qco->status === 'CANCEL') {
+                                                        // Badge untuk jadwal lama yang digeser/dibatalkan
+                                                        $color_status =
+                                                            'bg-light text-muted border border-secondary text-decoration-line-through';
+                                                        // Tampilkan info jelas model & cell-nya, ditambah teks pindah
+                                                        $badgeContent = "<small class='d-block' style='font-size: 0.7rem;'>[{$cellName}]</small> {$qco->model} ➔ Direschedule";
                                                     } else {
-                                                        $color_status = 'bg-danger text-white';
+                                                        // Warna normal berdasarkan completion
+                                                        if ($qco->completion == 100) {
+                                                            $color_status = 'bg-success text-white';
+                                                        } elseif ($qco->completion >= 50) {
+                                                            $color_status = 'bg-warning text-dark';
+                                                        } else {
+                                                            $color_status = 'bg-danger text-white';
+                                                        }
+
+                                                        $badgeContent = "<small class='d-block' style='font-size: 0.7rem;'>[{$cellName}]</small> {$qco->model}";
+
+                                                        // Jika ini data hasil reschedule, tambahkan indikator
+                                                        if ($qco->status_plan === 'rescheduled') {
+                                                            $badgeContent .= ' 🔄';
+                                                        }
                                                     }
                                                 @endphp
-                                                <div title="Model: {{ $qco->model }} | Cell: {{ $qco->cell }}"
+
+                                                <div title="Model: {{ $qco->model }} | Cell: {{ $cellName }} | Status: {{ $qco->status }}"
                                                     onclick="openModalQCO('{{ $qco->id }}')"
-                                                    class="handwritten-badge shadow-sm {{ $color_status }}">
-                                                    {{ $qco->model }}
+                                                    class="p-1 mb-1 rounded shadow-sm cursor-pointer {{ $color_status }}"
+                                                    style="font-size: 0.85rem; line-height: 1.2; text-align: left;">
+                                                    {!! $badgeContent !!}
                                                 </div>
                                             @endforeach
                                         </div>
@@ -453,12 +474,12 @@
                                     @endif
                                     @if ($isPlanner)
                                         <div class="col-lg-3 mt-3 mt-lg-0 border-left" id="update_or_cancel">
-                                            <label for="act_co_date" class="small text-muted d-block mb-1">UBAH ATAU
-                                                BATALKAN</label>
+                                            <label for="act_co_date" class="small text-muted d-block mb-1">Update
+                                                QCO</label>
                                             <div class="row">
                                                 <div class="col-6">
                                                     <button onclick="updateQCO()" class="btn btn-primary btn-sm w-100"
-                                                        type="button">UBAH</button>
+                                                        type="button">UNPLAN</button>
                                                 </div>
                                                 <div class="col-6">
                                                     <button onclick="cancelQCO()" class="btn btn-danger btn-sm w-100"
@@ -627,7 +648,7 @@
                 <form id="formUbahQCO">
                     <input type="hidden" name="id_qco_update" id="id_qco_update">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="modalUbahQCOLimit">Ubah Data QCO</h5>
+                        <h5 class="modal-title" id="modalUbahQCOLimit">Unplan Form</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
