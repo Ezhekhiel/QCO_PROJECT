@@ -7,28 +7,47 @@ use App\Models\qco;
 use App\Models\qco___preparation_list;
 use App\Models\WhatsappGroup;
 use App\Models\WhatsappLog;
+use App\Models\Holiday;
+use App\Services\WhatsappService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class SendQcoMorningReminder extends Command
 {
+    protected $whatsappService;
+
+    // Dependency Injection Service WhatsApp ke dalam Command
+    public function __construct(WhatsappService $whatsappService)
+    {
+        parent::__construct();
+        $this->whatsappService = $whatsappService;
+    }
+
     protected $signature = 'qco:send-morning-reminder';
-    protected $description = 'Kirim pengingat WhatsApp untuk QCO preparation H-3, H-2, dan H-1 yang belum lengkap';
+    protected $description = 'Kirim pengingat WhatsApp untuk QCO preparation (Hari H dan H-N tanpa batasan, serta mengabaikan hari libur & weekend)';
 
     public function handle()
     {
         $today = Carbon::today();
         $todayString = $today->toDateString(); // Format: YYYY-MM-DD
 
-        // Tentukan rentang H-1 sampai H-3 dari hari ini
-        $targetStart = $today->copy()->addDays(1)->format('Y-m-d'); // Besok (H-1)
-        $targetEnd = $today->copy()->addDays(3)->format('Y-m-d');   // 3 hari ke depan (H-3)
+        // Cek apakah hari ini weekend (Sabtu/Minggu) atau Hari Libur Nasional
+        $isWeekend = $today->isWeekend();
+        $isHoliday = Holiday::where('holiday_date', $todayString)->exists();
 
-        // 1. Ambil data QCO dalam rentang H-3 s.d H-1 atau yang masih NOT YET
+        if ($isWeekend || $isHoliday) {
+            $liburInfo = $isWeekend ? "Weekend (" . $today->translatedFormat('l') . ")" : "Hari Libur Nasional";
+            $msg = "Hari ini adalah {$liburInfo}. Pengingat QCO dibatalkan dan tidak dikirim.";
+            $this->info($msg);
+            Log::info("QCO Reminder: " . $msg);
+            return;
+        }
+
+        // 1. Ambil data QCO dari hari ini ke depan (tanpa batasan) atau yang sudah lewat tapi masih NOT YET
         $qcoList = qco::with(['preparations', 'cell_info'])
-            ->where(function ($query) use ($targetStart, $targetEnd, $todayString) {
-                $query->whereBetween('change_over_date', [$targetStart, $targetEnd])
+            ->where(function ($query) use ($todayString) {
+                $query->where('change_over_date', '>=', $todayString)
                     ->orWhere(function ($q) use ($todayString) {
                         $q->where('change_over_date', '<', $todayString)
                             ->where('status', 'NOT YET');
@@ -38,7 +57,7 @@ class SendQcoMorningReminder extends Command
             ->get();
 
         if ($qcoList->isEmpty()) {
-            $msg = "Tidak ada jadwal Change Over (QCO) untuk rentang H-1 sampai H-3 ke depan.";
+            $msg = "Tidak ada jadwal Change Over (QCO) untuk hari ini ke depan.";
             $this->info($msg);
             Log::info("QCO Reminder: " . $msg);
             return;
@@ -48,8 +67,8 @@ class SendQcoMorningReminder extends Command
         $masterLists = qco___preparation_list::with('department')->get();
 
         $reminderMessages = [];
-        $reminderMessages[] = "⚠️ *PENGINGAT PERSIAPAN QCO (H-3 s.d H-1)* ⚠️";
-        $reminderMessages[] = "Tanggal Hari Ini: " . Carbon::today()->translatedFormat('d F Y');
+        $reminderMessages[] = "⚠️ *PENGINGAT PERSIAPAN QCO* ⚠️";
+        $reminderMessages[] = "Tanggal Hari Ini: " . $today->translatedFormat('d F Y');
         $reminderMessages[] = "----------------------------------------";
 
         $totalPendingFound = 0;
@@ -58,11 +77,20 @@ class SendQcoMorningReminder extends Command
             $cellName = $qco->cell_info->area ?? 'Cell ' . $qco->cell;
             $modelName = $qco->model;
 
-            // Hitung sisa hari menuju Change Over
-            $coDate = Carbon::parse($qco->change_over_date);
-            $diffDays = $today->diffInDays($coDate, false);
+            $coDate = Carbon::parse($qco->change_over_date)->startOfDay();
+            $todayDate = $today->copy()->startOfDay();
 
-            // [PERBAIKAN] Inisialisasi ulang array uncompletedDepts untuk setiap QCO baru
+            // Penentuan label status hari
+            if ($coDate->eq($todayDate)) {
+                $statusLabel = "Hari H";
+            } elseif ($coDate->gt($todayDate)) {
+                $diffDays = $todayDate->diffInDays($coDate);
+                $statusLabel = "H-{$diffDays}";
+            } else {
+                $diffDays = $todayDate->diffInDays($coDate);
+                $statusLabel = "Sudah lewat (H+{$diffDays})";
+            }
+
             $uncompletedDepts = [];
 
             foreach ($masterLists as $master) {
@@ -79,9 +107,8 @@ class SendQcoMorningReminder extends Command
             if (!empty($uniqueUncompletedItems)) {
                 $totalPendingFound++;
                 $reminderMessages[] = "";
-                // [PERBAIKAN] Gabungkan string model & cell agar tidak error enter
                 $reminderMessages[] = "📌 *Model: {$modelName} ({$cellName})*";
-                $reminderMessages[] = "📅 *Jadwal QCO:* {$coDate->translatedFormat('d M Y')} (H-{$diffDays})";
+                $reminderMessages[] = "📅 *Jadwal QCO:* {$coDate->translatedFormat('d M Y')} ({$statusLabel})";
                 $reminderMessages[] = "Status QCO: {$qco->status} | Stage: {$qco->stage}";
                 $reminderMessages[] = "Belum Melakukan Checklist Persiapan:";
                 $reminderMessages = array_merge($reminderMessages, $uniqueUncompletedItems);
@@ -89,7 +116,7 @@ class SendQcoMorningReminder extends Command
         }
 
         if ($totalPendingFound === 0) {
-            $this->info("Semua persiapan QCO untuk rentang H-3 s.d H-1 sudah lengkap.");
+            $this->info("Semua persiapan QCO sudah lengkap.");
             return;
         }
 
@@ -97,49 +124,14 @@ class SendQcoMorningReminder extends Command
         $reminderMessages[] = "Mohon segera diselesaikan checklist persiapannya. Terima kasih! 🙏";
 
         $finalMessage = implode("\n", $reminderMessages);
-
-        // 3. Ambil target grup WhatsApp dari database
-        $targetGroup = WhatsappGroup::where('code_group', '120363431380455863@g.us')->first() ?? WhatsappGroup::first();
-
-        if (!$targetGroup) {
-            $this->error("Gagal mengirim WA: Belum ada data Grup WhatsApp yang tersimpan di database.");
-            return;
-        }
-
-        $waTargetGroup = $targetGroup->code_group;
-        $gatewayUrl = env('WA_GATEWAY_URL', 'http://localhost:50521');
-
+       // 3. Kirim pesan menggunakan Service yang sudah di-inject
         try {
-            $response = Http::withHeaders([
-                'x-api-key' => env('WA_GATEWAY_KEY', 'my-secret-key')
-            ])->post($gatewayUrl . '/send-text', [
-                'target' => $waTargetGroup,
-                'message' => $finalMessage
-            ]);
-
-            if ($response->successful()) {
-                $this->info("Peringatan QCO berhasil dikirim ke WhatsApp!");
-                Log::info("QCO Reminder: Berhasil dikirim ke group {$waTargetGroup}");
-
-                WhatsappLog::create([
-                    'target_group' => $waTargetGroup,
-                    'message' => $finalMessage,
-                    'message_id' => $response->json('message_id') ?? null,
-                    'status' => 'sent'
-                ]);
-            } else {
-                $errorMsg = "Gagal mengirim WA: " . $response->body();
-                $this->error($errorMsg);
-                Log::error("QCO Reminder Error: " . $errorMsg);
-
-                WhatsappLog::create([
-                    'target_group' => $waTargetGroup,
-                    'message' => $finalMessage,
-                    'status' => 'failed'
-                ]);
-            }
+            $this->whatsappService->sendGroupMessage($finalMessage);
+            $this->info("Peringatan QCO berhasil dikirim ke WhatsApp!");
+            Log::info("QCO Reminder: Berhasil dikirim ke group WhatsApp.");
         } catch (\Exception $e) {
-            $this->error("Error Koneksi ke WA Gateway: " . $e->getMessage());
+            $this->error("Gagal mengirim WA: " . $e->getMessage());
+            Log::error("QCO Reminder Error: " . $e->getMessage());
         }
     }
 }

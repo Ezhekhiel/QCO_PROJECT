@@ -514,38 +514,7 @@
                                             </tr>
                                         </thead>
                                         <tbody id="master_checklist_tbody">
-                                            <tr>
-                                                <td rowspan="2" class="align-middle font-weight-bold bg-white">PLANNER
-                                                </td>
-                                                <td>Schedule</td>
-                                                <td>-</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Material Readiness</td>
-                                                <td>-</td>
-                                            </tr>
-                                            <tr>
-                                                <td rowspan="5" class="align-middle font-weight-bold bg-white">PPIC
-                                                    TOOLING</td>
-                                                <td>Bottom Tools</td>
-                                                <td>-</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Upper Tools</td>
-                                                <td>-</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Pallet Comp Stitching</td>
-                                                <td>-</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Laste</td>
-                                                <td>-</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Cutting Dies</td>
-                                                <td>-</td>
-                                            </tr>
+
                                         </tbody>
                                     </table>
                                 </div>

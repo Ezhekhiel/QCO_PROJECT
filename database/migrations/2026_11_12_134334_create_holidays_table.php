@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('qco___preparation_files', function (Blueprint $table) {
-            $table->integer('user_update');
+        Schema::create('holidays', function (Blueprint $table) {
+            $table->id();
+            $table->date('holiday_date')->unique();
+            $table->string('description');
+            $table->timestamps();
         });
     }
 
@@ -21,8 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('qco___preparation_files', function (Blueprint $table) {
-            $table->dropColumn('user_update');
-        });
+        Schema::dropIfExists('holidays');
     }
 };
