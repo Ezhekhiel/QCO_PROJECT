@@ -84,11 +84,11 @@ class SendQcoMorningReminder extends Command
             if ($coDate->eq($todayDate)) {
                 $statusLabel = "Hari H";
             } elseif ($coDate->gt($todayDate)) {
-                $diffDays = $todayDate->diffInDays($coDate);
+                $diffDays = abs($todayDate->diffInDays($coDate));
                 $statusLabel = "H-{$diffDays}";
             } else {
-                $diffDays = $todayDate->diffInDays($coDate);
-                $statusLabel = "Sudah lewat (H+{$diffDays})";
+                $diffDays = abs($todayDate->diffInDays($coDate));
+                $statusLabel = "H+{$diffDays}";
             }
 
             $uncompletedDepts = [];
