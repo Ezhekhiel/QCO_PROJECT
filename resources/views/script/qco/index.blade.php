@@ -1088,7 +1088,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
+                if (data.success === true) {
                     alert(data.message); // Notifikasi sukses
                 } else {
                     alert('Terjadi kesalahan!');
