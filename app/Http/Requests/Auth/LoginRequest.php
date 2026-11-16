@@ -28,7 +28,8 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            // Hapus 'email' dari array rule di bawah ini
+            'email' => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -40,13 +41,18 @@ class LoginRequest extends FormRequest
      */
     public function authenticate(): void
     {
-        $this->ensureIsNotRateLimited();
+        Sm: $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        // Tentukan apakah input yang dimasukkan adalah format email atau NIK
+        $loginInput = $this->input('email'); // atau $this->input('login') tergantung nama field di form Anda
+        $field = filter_var($loginInput, FILTER_VALIDATE_EMAIL) ? 'email' : 'nik';
+
+        // Lakukan attempt auth berdasarkan field yang terdeteksi
+        if (! Auth::attempt([$field => $loginInput, 'password' => $this->input('password')], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => trans('auth.failed'), // Sesuaikan nama key error jika form menggunakan 'login'
             ]);
         }
 
