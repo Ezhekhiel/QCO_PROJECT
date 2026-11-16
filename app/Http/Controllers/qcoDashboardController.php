@@ -27,29 +27,34 @@ class qcoDashboardController extends Controller
      */
     public function index(Request $request)
     {
-            // Ambil data user yang sedang login
+        // Ambil data user yang sedang login
         $user = Auth::user();
         $user->load('department');
         $department = $user->department->nama;
-        // Cek manual department_id (misal: hanya departemen dengan ID 1 yang boleh akses)
 
         $currentMonth = $request->input('month') ? $request->input('month') . '-01' : Carbon::now()->format('Y-m-d');
-        $cell = $request->input('cell') ? $request->input('cell'): "";
+
+        // 1. Ambil input cell sebagai array (jika kosong, jadikan array kosong)
+        $selectedCells = $request->input('cell', []);
+
         $get_user = User::get();
+
         // Ambil data qco berdasarkan rentang bulan yang sedang aktif di kalender
         $start = Carbon::parse($currentMonth)->startOfMonth()->startOfWeek(Carbon::SUNDAY);
         $end = Carbon::parse($currentMonth)->endOfMonth()->endOfWeek(Carbon::SATURDAY);
 
         $qcoList = qco::with(['qco_status','user', 'user.department', 'user.role','preparations','cell_info','preparations.preparation_file'])
                 ->whereBetween('change_over_date', [$start, $end])
-                 ->whereHas('user.department', function ($query) {
+                ->whereHas('user.department', function ($query) {
                         // Ganti 'PLANNER' dengan nama department yang ingin dicari
                         $query->where('nama', 'PLANNER');
                     })
-                ->when($cell, function ($query, $cell) {
-                        return $query->where('cell', $cell);
+                // 2. Ubah when() agar menggunakan whereIn jika $selectedCells tidak kosong
+                ->when(!empty($selectedCells), function ($query) use ($selectedCells) {
+                        return $query->whereIn('cell', $selectedCells);
                     })
                 ->get();
+
         // 2. Filter / buang data berdasarkan department dan stage-nya
         if ($department === 'DEVELOPMENT') {
             $qcoList = $qcoList->reject(function ($item) {
@@ -62,22 +67,25 @@ class qcoDashboardController extends Controller
                 return $item->stage === 'Production Trial';
             });
         }
+
         $list = qco___preparation_list::with('department')->get();
 
         $selectedIds = $qcoList->flatMap(function ($qco) {
             return $qco->preparations;
         })->pluck('id_list')->unique();
 
-        // 2. Petakan $list master sekaligus tandai mana yang sudah ter-checklist
+        // Petakan $list master sekaligus tandai mana yang sudah ter-checklist
         $list_checklist = $list->map(function ($item) use ($selectedIds) {
             $item->is_checked = $selectedIds->contains($item->id);
             return $item;
         });
 
+        // Perhatian: Variabel $cell untuk master data dropdown list
         $cell = cell_info::get();
-        $planMaster= PlanMaster::whereBetween('stitching_start_date', [$start, $end])->get();
-        // return $planMaster;
-        return view('qco.index', compact('qcoList', 'currentMonth','cell','list','planMaster'));
+
+        $planMaster = PlanMaster::whereBetween('stitching_start_date', [$start, $end])->get();
+
+        return view('qco.index', compact('qcoList', 'currentMonth', 'cell', 'list', 'planMaster'));
     }
     public function dataModal(Request $request)
     {

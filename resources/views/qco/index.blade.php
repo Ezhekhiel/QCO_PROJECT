@@ -32,31 +32,66 @@
 
                         <!-- Month Navigation di Tengah -->
                         <div class="btn-group mx-auto">
-                            <a href="?month={{ \Carbon\Carbon::parse($currentMonth ?? now())->subMonth()->format('Y-m') }}{{ request('cell') ? '&cell=' . request('cell') : '' }}"
+                            <a href="{{ request()->fullUrlWithQuery(['month' => \Carbon\Carbon::parse($currentMonth ?? now())->subMonth()->format('Y-m')]) }}"
                                 class="btn btn-sm btn-outline-secondary">&laquo; Prev</a>
                             <span
                                 class="btn btn-sm btn-light disabled fw-bold">{{ \Carbon\Carbon::parse($currentMonth ?? now())->translatedFormat('F Y') }}</span>
-                            <a href="?month={{ \Carbon\Carbon::parse($currentMonth ?? now())->addMonth()->format('Y-m') }}{{ request('cell') ? '&cell=' . request('cell') : '' }}"
+                            <a href="{{ request()->fullUrlWithQuery(['month' => \Carbon\Carbon::parse($currentMonth ?? now())->addMonth()->format('Y-m')]) }}"
                                 class="btn btn-sm btn-outline-secondary">Next &raquo;</a>
                         </div>
 
                         <!-- Search Select dengan Kirim Bulan & Cell Sekaligus -->
-                        <div class="d-flex align-items-center gap-1">
-                            <select name="cell" id="cell" class="form-select form-select-sm"
-                                style="min-width: 180px;"
-                                onchange="window.location.href='?month={{ \Carbon\Carbon::parse($currentMonth ?? now())->format('Y-m') }}&cell=' + this.value">
-                                <option value="">-- Pilih Cell --</option>
-                                @foreach ($cell as $a)
-                                    <option value="{{ $a->id }}" {{ request('cell') == $a->id ? 'selected' : '' }}>
-                                        {{ $a->area }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @if (request('cell'))
+                        <form action="" method="GET" class="d-flex align-items-center gap-2">
+                            <!-- Pertahankan parameter month -->
+                            <input type="hidden" name="month"
+                                value="{{ \Carbon\Carbon::parse($currentMonth ?? now())->format('Y-m') }}">
+
+                            <!-- Dropdown Container -->
+                            <div class="dropdown">
+                                @php
+                                    $selectedCells = (array) request('cell', []);
+                                    $countSelected = count($selectedCells);
+                                @endphp
+
+                                <!-- Tombol Toggle Dropdown -->
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                    id="cellDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                    aria-expanded="false">
+                                    <i class="fas fa-filter"></i> Pilih Cell
+                                    @if ($countSelected > 0)
+                                        <span class="badge bg-primary rounded-pill">{{ $countSelected }}</span>
+                                    @endif
+                                </button>
+
+                                <!-- Menu Dropdown berisi Checkbox -->
+                                <div class="dropdown-menu p-3 shadow" aria-labelledby="cellDropdown"
+                                    style="min-width: 220px; max-height: 250px; overflow-y: auto;">
+                                    <div class="fw-bold small text-muted mb-2">Daftar Cell</div>
+
+                                    @foreach ($cell as $a)
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="cell[]"
+                                                value="{{ $a->id }}" id="cell_{{ $a->id }}"
+                                                {{ in_array($a->id, $selectedCells) ? 'checked' : '' }}>
+                                            <label class="form-check-label small" for="cell_{{ $a->id }}">
+                                                {{ $a->area }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <!-- Tombol Search untuk mengeksekusi filter -->
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                Cari
+                            </button>
+
+                            <!-- Tombol Reset Filter jika ada yang terpilih -->
+                            @if ($countSelected > 0)
                                 <a href="?month={{ \Carbon\Carbon::parse($currentMonth ?? now())->format('Y-m') }}"
                                     class="btn btn-sm btn-outline-danger" title="Reset Filter">&times;</a>
                             @endif
-                        </div>
+                        </form>
                     </div>
 
                     <!-- Nav Tabs Header -->
@@ -218,43 +253,47 @@
                                             class="calendar-cell {{ !$isCurrentMonth ? 'other-month' : '' }} {{ $isToday ? 'today' : '' }}">
                                             <div class="day-number">{{ $startDate->format('j') }}</div>
 
-                                            @foreach ($dayEvents as $qco)
-                                                @php
-                                                    // Ambil nama area cell jika relasinya ada (asumsi relasi cell_info ada)
-                                                    $cellName = $qco->cell_info->area ?? 'Cell ' . $qco->cell;
+                                            <!-- Container pembungkus untuk membatasi tinggi maksimal 2 komponen dan mengaktifkan scroll -->
+                                            <div class="event-list-container"
+                                                style="max-height: 85px; overflow-y: auto; overflow-x: hidden;">
+                                                @foreach ($dayEvents as $qco)
+                                                    @php
+                                                        // Ambil nama area cell jika relasinya ada (asumsi relasi cell_info ada)
+                                                        $cellName = $qco->cell_info->area ?? 'Cell ' . $qco->cell;
 
-                                                    if ($qco->status === 'CANCEL') {
-                                                        // Badge untuk jadwal lama yang digeser/dibatalkan
-                                                        $color_status =
-                                                            'bg-light text-muted border border-secondary text-decoration-line-through';
-                                                        // Tampilkan info jelas model & cell-nya, ditambah teks pindah
-                                                        $badgeContent = "<small class='d-block' style='font-size: 0.7rem;'>[{$cellName}]</small> {$qco->model} ➔ Direschedule";
-                                                    } else {
-                                                        // Warna normal berdasarkan completion
-                                                        if ($qco->completion == 100) {
-                                                            $color_status = 'bg-success text-white';
-                                                        } elseif ($qco->completion >= 50) {
-                                                            $color_status = 'bg-warning text-dark';
+                                                        if ($qco->status === 'CANCEL') {
+                                                            // Badge untuk jadwal lama yang digeser/dibatalkan
+                                                            $color_status =
+                                                                'bg-light text-muted border border-secondary text-decoration-line-through';
+                                                            // Tampilkan info jelas model & cell-nya, ditambah teks pindah
+                                                            $badgeContent = "<small class='d-block' style='font-size: 0.7rem;'>[{$cellName}]</small> {$qco->model} ➔ Direschedule";
                                                         } else {
-                                                            $color_status = 'bg-danger text-white';
+                                                            // Warna normal berdasarkan completion
+                                                            if ($qco->completion == 100) {
+                                                                $color_status = 'bg-success text-white';
+                                                            } elseif ($qco->completion >= 50) {
+                                                                $color_status = 'bg-warning text-dark';
+                                                            } else {
+                                                                $color_status = 'bg-danger text-white';
+                                                            }
+
+                                                            $badgeContent = "<small class='d-block' style='font-size: 0.7rem;'>[{$cellName}]</small> {$qco->model}";
+
+                                                            // Jika ini data hasil reschedule, tambahkan indikator
+                                                            if ($qco->status_plan === 'rescheduled') {
+                                                                $badgeContent .= ' 🔄';
+                                                            }
                                                         }
+                                                    @endphp
 
-                                                        $badgeContent = "<small class='d-block' style='font-size: 0.7rem;'>[{$cellName}]</small> {$qco->model}";
-
-                                                        // Jika ini data hasil reschedule, tambahkan indikator
-                                                        if ($qco->status_plan === 'rescheduled') {
-                                                            $badgeContent .= ' 🔄';
-                                                        }
-                                                    }
-                                                @endphp
-
-                                                <div title="Model: {{ $qco->model }} | Cell: {{ $cellName }} | Status: {{ $qco->status }}"
-                                                    onclick="openModalQCO('{{ $qco->id }}')"
-                                                    class="p-1 mb-1 rounded shadow-sm cursor-pointer {{ $color_status }}"
-                                                    style="font-size: 0.85rem; line-height: 1.2; text-align: left;">
-                                                    {!! $badgeContent !!}
-                                                </div>
-                                            @endforeach
+                                                    <div title="Model: {{ $qco->model }} | Cell: {{ $cellName }} | Status: {{ $qco->status }}"
+                                                        onclick="openModalQCO('{{ $qco->id }}')"
+                                                        class="p-1 mb-1 rounded shadow-sm cursor-pointer {{ $color_status }}"
+                                                        style="font-size: 0.85rem; line-height: 1.2; text-align: left;">
+                                                        {!! $badgeContent !!}
+                                                    </div>
+                                                @endforeach
+                                            </div>
                                         </div>
 
                                         @php $startDate->addDay(); @endphp
