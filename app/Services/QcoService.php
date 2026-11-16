@@ -66,7 +66,7 @@ class QcoService {
         }
 
         $message = $headerMessage . "\n\n" .
-                "*Model Baru:* {$qco->model}\n" .
+                "*Model:* {$qco->model}\n" .
                 "*Cell:* {$qco->cell_info->area}\n" .
                 "*Tanggal CO:* {$coDate}\n" .
                 "*Stage:* {$qco->stage}\n" .

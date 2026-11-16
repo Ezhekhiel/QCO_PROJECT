@@ -270,18 +270,44 @@
 
                                         @foreach ($dayEvents as $qco)
                                             @php
-                                                if ($qco->percent_checklist == 100) {
-                                                    $color_status = 'bg-success text-white';
-                                                } elseif ($qco->percent_checklist >= 50) {
-                                                    $color_status = 'bg-warning text-dark';
+                                                // Ambil nama area cell jika relasinya ada (asumsi relasi cell_info ada)
+                                                $cellName = $qco->cell_info->area ?? 'Cell ' . $qco->cell;
+
+                                                if ($qco->status === 'CANCEL') {
+                                                    // Badge untuk jadwal lama yang digeser/dibatalkan
+                                                    $color_status =
+                                                        'bg-light text-muted border border-secondary text-decoration-line-through';
+                                                    $badgeContent = "<small class='d-block' style='font-size: 0.7rem;'>[{$cellName}]</small> {$qco->model} ➔ Direschedule";
                                                 } else {
-                                                    $color_status = 'bg-danger text-white';
+                                                    // Warna normal berdasarkan completion (ubah ke percent_checklist jika data Anda menggunakan itu)
+                                                    $completionValue =
+                                                        $qco->completion ?? ($qco->percent_checklist ?? 0);
+
+                                                    if ($completionValue == 100) {
+                                                        $color_status = 'bg-success text-white';
+                                                    } elseif ($completionValue >= 50) {
+                                                        $color_status = 'bg-warning text-dark';
+                                                    } else {
+                                                        $color_status = 'bg-danger text-white';
+                                                    }
+
+                                                    $badgeContent = "<small class='d-block' style='font-size: 0.7rem;'>[{$cellName}]</small> {$qco->model}";
+
+                                                    // Jika ini data hasil reschedule, tambahkan indikator
+                                                    if (
+                                                        isset($qco->status_plan) &&
+                                                        $qco->status_plan === 'rescheduled'
+                                                    ) {
+                                                        $badgeContent .= ' 🔄';
+                                                    }
                                                 }
                                             @endphp
-                                            <div title="Model: {{ $qco->model }} | Cell: {{ $qco->cell }}"
-                                                class="handwritten-badge shadow-sm {{ $color_status }}"
-                                                onclick="openModalQCO({{ $qco->id }})">
-                                                {{ $qco->model }}
+
+                                            <div title="Model: {{ $qco->model }} | Cell: {{ $cellName }} | Status: {{ $qco->status ?? 'Normal' }}"
+                                                onclick="openModalQCO('{{ $qco->id }}')"
+                                                class="p-1 mb-1 rounded shadow-sm cursor-pointer {{ $color_status }}"
+                                                style="font-size: 0.85rem; line-height: 1.2; text-align: left;">
+                                                {!! $badgeContent !!}
                                             </div>
                                         @endforeach
                                     </div>

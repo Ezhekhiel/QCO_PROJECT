@@ -89,7 +89,6 @@ class WhatsappService
         foreach ($logs as $log) {
             if (!empty($log->message_id)) {
                 try {
-                    // Kirim request DELETE ke server Node.js untuk hapus pesan di WhatsApp
                     $response = Http::withHeaders([
                         'x-api-key' => $apiKey,
                     ])->delete($gatewayUrl . '/delete-message', [
@@ -98,16 +97,18 @@ class WhatsappService
 
                     if ($response->successful()) {
                         Log::info("Berhasil menghapus pesan WhatsApp ID: {$log->message_id}");
-                        // Hapus baris log setelah sukses terhapus di WA
                         $log->delete();
                     } else {
-                        Log::warning("Gagal menghapus pesan WhatsApp ID: {$log->message_id} - " . $response->body());
+                        Log::warning("Gagal menghapus pesan ID {$log->message_id}: " . $response->body());
                     }
+
+                    // Beri jeda 0.5 detik agar tidak terlalu cepat
+                    usleep(500000);
+
                 } catch (\Exception $e) {
                     Log::error("Error koneksi saat menghapus pesan WA ID {$log->message_id}: " . $e->getMessage());
                 }
             } else {
-                // Jika message_id kosong, langsung hapus baris log-nya
                 $log->delete();
             }
         }

@@ -46,6 +46,7 @@ class SendQcoMorningReminder extends Command
 
         // 1. Ambil data QCO dari hari ini ke depan (tanpa batasan) atau yang sudah lewat tapi masih NOT YET
         $qcoList = qco::with(['preparations', 'cell_info'])
+            ->where('status', '!=', 'CANCEL')
             ->where(function ($query) use ($todayString) {
                 $query->where('change_over_date', '>=', $todayString)
                     ->orWhere(function ($q) use ($todayString) {
