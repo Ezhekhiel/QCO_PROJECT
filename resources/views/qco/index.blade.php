@@ -28,7 +28,7 @@
                     <div
                         class="card-header bg-white d-flex align-items-center justify-content-between py-3 flex-wrap gap-2">
                         <!-- Judul di Kiri -->
-                        <h3 class="card-title mb-0">Kalender Change Over</h3>
+                        <h3 class="card-title mb-0" onclick="triggerDelete()">Kalender Change Over</h3>
 
                         <!-- Month Navigation di Tengah -->
                         <div class="btn-group mx-auto">

@@ -1071,4 +1071,32 @@
                 alert('Gagal menghubungi server.');
             });
     }
+
+    function triggerDelete() {
+        // Ambil CSRF token dari meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // Berikan feedback visual bahwa proses sedang berjalan (opsional)
+        console.log("Mengirim reminder...");
+
+        fetch('/test-delete-wa-logs', {
+                method: 'get',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message); // Notifikasi sukses
+                } else {
+                    alert('Terjadi kesalahan!');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Gagal menghubungi server.');
+            });
+    }
 </script>
