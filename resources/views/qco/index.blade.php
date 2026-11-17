@@ -636,7 +636,12 @@
                     </div>
 
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer justify-content-between">
+                    <!-- Teks panjang di pojok kiri -->
+                    <div class="text-start" id="description-qco" style="font-size: 1.2 rem; max-width: 70%;">
+                    </div>
+
+                    <!-- Tombol di pojok kanan -->
                     <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Tutup</button>
                 </div>
             </div>

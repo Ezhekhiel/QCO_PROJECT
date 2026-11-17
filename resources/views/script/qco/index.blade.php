@@ -680,6 +680,9 @@
                 // E. Render Chart
                 await renderCharts(dataQCO, checklistData);
 
+                $('#description-qco').html(
+                    `Description QCO : ${dataQCO.description ? dataQCO.description : '-'}`);
+
             })
             .catch(function(error) {
                 console.error('QCO Render Error:', error);
