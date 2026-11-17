@@ -25,7 +25,7 @@ class SendQcoMorningReminder extends Command
     }
 
     protected $signature = 'qco:send-morning-reminder';
-    protected $description = 'Kirim pengingat WhatsApp untuk QCO preparation (Hari H dan H-N tanpa batasan, serta mengabaikan hari libur & weekend)';
+    protected $description = 'Kirim pengingat WhatsApp untuk QCO preparation (Hanya untuk H-3 ke bawah/mendekati Hari H, serta mengabaikan hari libur & weekend)';
 
     public function handle()
     {
@@ -44,21 +44,20 @@ class SendQcoMorningReminder extends Command
             return;
         }
 
-        // 1. Ambil data QCO dari hari ini ke depan (tanpa batasan) atau yang sudah lewat tapi masih NOT YET
+        // Batasi rentang tanggal: Hanya ambil QCO dari hari ini sampai 3 hari ke depan (H-3)
+        // plus QCO yang sudah lewat tapi masih NOT YET jika diperlukan,
+        // namun untuk murni H-3, kita atur batas tanggal maksimumnya adalah $today + 3 hari.
+        $targetMaxDate = $today->copy()->addDays(3)->toDateString();
+
+        // 1. Ambil data QCO dari hari ini sampai H-3 (change_over_date antara hari ini dan 3 hari ke depan)
         $qcoList = qco::with(['preparations', 'cell_info'])
             ->where('status', '!=', 'CANCEL')
-            ->where(function ($query) use ($todayString) {
-                $query->where('change_over_date', '>=', $todayString)
-                    ->orWhere(function ($q) use ($todayString) {
-                        $q->where('change_over_date', '<', $todayString)
-                            ->where('status', 'NOT YET');
-                    });
-            })
+            ->whereBetween('change_over_date', [$todayString, $targetMaxDate])
             ->orderBy('change_over_date', 'asc')
             ->get();
 
         if ($qcoList->isEmpty()) {
-            $msg = "Tidak ada jadwal Change Over (QCO) untuk hari ini ke depan.";
+            $msg = "Tidak ada jadwal Change Over (QCO) dalam rentang H-3 dari hari ini.";
             $this->info($msg);
             Log::info("QCO Reminder: " . $msg);
             return;
@@ -68,7 +67,7 @@ class SendQcoMorningReminder extends Command
         $masterLists = qco___preparation_list::with('department')->get();
 
         $reminderMessages = [];
-        $reminderMessages[] = "⚠️ *PENGINGAT PERSIAPAN QCO* ⚠️";
+        $reminderMessages[] = "⚠️ *PENGINGAT PERSIAPAN QCO (H-3)* ⚠️";
         $reminderMessages[] = "Tanggal Hari Ini: " . $today->translatedFormat('d F Y');
         $reminderMessages[] = "----------------------------------------";
 
@@ -84,12 +83,9 @@ class SendQcoMorningReminder extends Command
             // Penentuan label status hari
             if ($coDate->eq($todayDate)) {
                 $statusLabel = "Hari H";
-            } elseif ($coDate->gt($todayDate)) {
-                $diffDays = abs($todayDate->diffInDays($coDate));
-                $statusLabel = "H-{$diffDays}";
             } else {
                 $diffDays = abs($todayDate->diffInDays($coDate));
-                $statusLabel = "H+{$diffDays}";
+                $statusLabel = "H-{$diffDays}";
             }
 
             $uncompletedDepts = [];
@@ -117,7 +113,7 @@ class SendQcoMorningReminder extends Command
         }
 
         if ($totalPendingFound === 0) {
-            $this->info("Semua persiapan QCO sudah lengkap.");
+            $this->info("Semua persiapan QCO untuk rentang H-3 sudah lengkap.");
             return;
         }
 
@@ -125,7 +121,8 @@ class SendQcoMorningReminder extends Command
         $reminderMessages[] = "Mohon segera diselesaikan checklist persiapannya. Terima kasih! 🙏";
 
         $finalMessage = implode("\n", $reminderMessages);
-       // 3. Kirim pesan menggunakan Service yang sudah di-inject
+
+        // 3. Kirim pesan menggunakan Service yang sudah di-inject
         try {
             $this->whatsappService->sendGroupMessage($finalMessage);
             $this->info("Peringatan QCO berhasil dikirim ke WhatsApp!");
