@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/QCO/cancelQCO', [qcoDashboardController::class, 'cancelQCO'])->name('QCO.cancelQCO');
     Route::post('/QCO/updateStatusCancel', [qcoDashboardController::class, 'updateStatusCancel'])->name('QCO.updateStatusCancel');
     Route::post('/QCO/update', [qcoDashboardController::class, 'update'])->name('QCO.update');
+    Route::post('/QCO-preparation/{id}/validation', [qcoDashboardController::class, 'updateValidation']);
     Route::post('/trigger-reminder', [qcoDashboardController::class, 'sendReminder']);
 
     Route::get('/QCO/Form', [QcoController::class, 'form']);

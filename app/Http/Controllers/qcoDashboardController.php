@@ -129,6 +129,7 @@ class qcoDashboardController extends Controller
             return [
                 'id'               => $item->id,
                 'id_list'          => $item->id_list,
+                'validation'       => $item->validation,
                 'list'             => $item->preparation_list->list ?? null,
                 'department'       => $item->preparation_list->department->nama ?? 'Lainnya',
                 'preparation_file' => $item->preparation_file
@@ -171,11 +172,31 @@ class qcoDashboardController extends Controller
             'actual_change_over'     => $qcoRecord->qco_status->actual_change_over,
             'preparations_checklist' => $preparationsChecklistFormatted
         ];
-
         return response()->json([
             'status'             => 'success',
             'dataQCO'            => $simplifiedData,
             'preparation_list'   => $preparation_list
+        ]);
+    }
+    public function updateValidation(Request $request, $id)
+    {
+        $preparation = qco___preparation::find($id);
+
+        if (!$preparation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak ditemukan'
+            ], 404);
+        }
+
+        // Update status validation berdasarkan input request (0 atau 1 / true atau false)
+        $preparation->validation = filter_var($request->validation, FILTER_VALIDATE_BOOLEAN);
+        $preparation->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status validation berhasil diperbarui!',
+            'data' => $preparation
         ]);
     }
     public function update_act_co(Request $request) {

@@ -12,6 +12,8 @@
     };
     let isTableLoaded = false;
     let rowFilesMap = {};
+    const isProduction = @json($isProduction);
+    const isPlanner = @json($isPlanner);
 
     $(document).ready(function() {
         $('#input_cso').on('submit', function(e) {
@@ -282,6 +284,69 @@
                 },
                 complete: function() {
                     $('#btn_save_act_co').prop('disabled', false).text('Save');
+                }
+            });
+        });
+        // Event listener untuk tombol toggle validation
+        $(document).on('click', '.toggle-validation', function() {
+            let button = $(this);
+            let id = button.data('id');
+            let newStatus = button.data('status'); // 1 (true) atau 0 (false)
+            if (!isProduction) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Hanya department produksi yang bisa update status.',
+                    icon: 'error'
+                });
+                button.prop('disabled', false);
+                return false
+            }
+            // Konfirmasi atau langsung eksekusi AJAX
+            $.ajax({
+                url: `/QCO-preparation/${id}/validation`, // Sesuaikan dengan route Anda
+                type: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'), // Token CSRF Laravel
+                    validation: newStatus
+                },
+                beforeSend: function() {
+                    button.prop('disabled', true); // Disable tombol sementara proses
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: response.message ||
+                                'Status validation berhasil diperbarui!',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            // Cek apakah ada fungsi fetch/load data tabel, jika ada panggil, jika tidak reload halaman
+                            if (typeof fetchTableData === 'function') {
+                                fetchTableData();
+                                button.prop('disabled', false);
+                            } else {
+                                location.reload(); // Refresh halaman
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Gagal!',
+                            text: response.message || 'Terjadi kesalahan.',
+                            icon: 'error'
+                        });
+                        button.prop('disabled', false);
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Terjadi kesalahan pada server.',
+                        icon: 'error'
+                    });
+                    button.prop('disabled', false);
                 }
             });
         });
@@ -702,7 +767,30 @@
                         });
                         fileHtml = links.join('');
                     }
+                    var tdProduksi = '';
+                    let status_validation = '';
 
+                    if (item.validation == '0' || item.validation == false) {
+                        // Belum validasi (Silang Merah / Not Yet) -> Bisa diklik untuk mengubah jadi Done
+                        status_validation = `
+                                <button type="button" class="btn btn-sm btn-light border-0 text-danger p-0 toggle-validation" data-id="${item.id}" data-status="1" title="Klik untuk ubah jadi Done">
+                                    <i class="fas fa-times-circle fa-lg"></i> <span class="ms-1 fw-bold">Not Yet</span>
+                                </button>
+                            `;
+                    } else {
+                        // Sudah validasi (Centang Hijau / Done) -> Bisa diklick untuk uncheck jadi Not Yet
+                        status_validation = `
+                                <button type="button" class="btn btn-sm btn-light border-0 text-success p-0 toggle-validation" data-id="${item.id}" data-status="0" title="Klik untuk ubah jadi Not Yet">
+                                    <i class="fas fa-check-circle fa-lg"></i> <span class="ms-1 fw-bold">Done</span>
+                                </button>
+                            `;
+                    }
+
+                    tdProduksi += `
+                            <td class="align-middle text-center">
+                                <div class="d-flex flex-wrap justify-content-center align-items-center">${status_validation}</div>
+                            </td>
+                        `;
                     rowsHtml += `<tr>`;
                     if (index === 0) {
                         rowsHtml +=
@@ -718,6 +806,7 @@
                     <td class="align-middle text-center">
                         <div class="d-flex flex-wrap justify-content-center">${fileHtml}</div>
                     </td>
+                    ${tdProduksi}
                 </tr>`;
                 });
             }

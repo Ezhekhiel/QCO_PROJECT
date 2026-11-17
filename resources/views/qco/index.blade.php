@@ -19,6 +19,16 @@
             </div>
         </div>
     </div>
+    @php
+        $isProduction = false;
+        $isPlanner = false;
+        if (Auth::check() && Auth::user()->department && Auth::user()->department->nama == 'PRODUCTION') {
+            $isProduction = true;
+        }
+        if (Auth::check() && Auth::user()->department && Auth::user()->department->nama == 'PLANNER') {
+            $isPlanner = true;
+        }
+    @endphp
 
     <div class="app-content">
         <div class="container-fluid">
@@ -475,24 +485,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    @php
-                                        $isProduction = false;
-                                        $isPlanner = false;
-                                        if (
-                                            Auth::check() &&
-                                            Auth::user()->department &&
-                                            Auth::user()->department->nama == 'PRODUCTION'
-                                        ) {
-                                            $isProduction = true;
-                                        }
-                                        if (
-                                            Auth::check() &&
-                                            Auth::user()->department &&
-                                            Auth::user()->department->nama == 'PLANNER'
-                                        ) {
-                                            $isPlanner = true;
-                                        }
-                                    @endphp
+
 
                                     <!-- Bagian Kanan / Kotak Merah: Actual Change Over (Lebar 3 Kolom) -->
                                     @if ($isProduction)
@@ -547,9 +540,10 @@
                                         style="font-size: 0.85rem;">
                                         <thead class="thead-light" style="position: sticky; top: 0; z-index: 1;">
                                             <tr>
-                                                <th style="width: 35%;">DEPARTEMENT</th>
-                                                <th style="width: 45%;">CHECKLIST</th>
-                                                <th style="width: 20%;">File</th>
+                                                <th>DEPARTEMENT</th>
+                                                <th>CHECKLIST</th>
+                                                <th>File</th>
+                                                <th>Validation</th>
                                             </tr>
                                         </thead>
                                         <tbody id="master_checklist_tbody">
