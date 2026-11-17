@@ -5,16 +5,16 @@
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
-        <!-- Email Address -->
+        <!-- NIK Address -->
         <div>
             <!-- Ubah label agar informatif -->
-            <x-input-label for="email" :value="__('Email / NIK')" />
+            <x-input-label for="nik" :value="__('NIK')" />
 
             <!-- Ubah placeholder, autocomplete, dan type jika diperlukan -->
-            <x-text-input id="email" class="block mt-1 w-full" type="text" name="email" :value="old('email')" required
-                autofocus autocomplete="username" placeholder="Masukkan Email atau NIK" />
+            <x-text-input id="nik" class="block mt-1 w-full" type="number" name="nik" :value="old('nik')" required
+                autofocus autocomplete="nik" placeholder="Masukkan NIK" />
 
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <x-input-error :messages="$errors->get('nik')" class="mt-2" />
         </div>
 
         <!-- Password -->

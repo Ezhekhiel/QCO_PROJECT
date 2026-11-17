@@ -28,8 +28,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Hapus 'email' dari array rule di bawah ini
-            'email' => ['required', 'string'],
+            'nik' => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -41,18 +40,14 @@ class LoginRequest extends FormRequest
      */
     public function authenticate(): void
     {
-        Sm: $this->ensureIsNotRateLimited();
+        $this->ensureIsNotRateLimited();
 
-        // Tentukan apakah input yang dimasukkan adalah format email atau NIK
-        $loginInput = $this->input('email'); // atau $this->input('login') tergantung nama field di form Anda
-        $field = filter_var($loginInput, FILTER_VALIDATE_EMAIL) ? 'email' : 'nik';
-
-        // Lakukan attempt auth berdasarkan field yang terdeteksi
-        if (! Auth::attempt([$field => $loginInput, 'password' => $this->input('password')], $this->boolean('remember'))) {
+        // Lakukan attempt auth langsung menggunakan kolom 'nik'
+        if (! Auth::attempt(['nik' => $this->input('nik'), 'password' => $this->input('password')], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'), // Sesuaikan nama key error jika form menggunakan 'login'
+                'nik' => trans('auth.failed'),
             ]);
         }
 
@@ -75,7 +70,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
+            'nik' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -87,6 +82,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('nik')).'|'.$this->ip());
     }
 }
