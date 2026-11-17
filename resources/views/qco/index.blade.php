@@ -14,7 +14,7 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-sm-6">
-                    <h3 class="mb-0" onclick="triggerReminder()">Change Over (QCO) Schedule</h3>
+                    <h3 class="mb-0">Change Over (QCO) Schedule</h3>
                 </div>
             </div>
         </div>
@@ -35,10 +35,9 @@
             <div class="row">
                 <div class="card shadow-sm">
                     <!-- Header Card Utama & Nav Tabs (Di luar tab-content agar tetap diam di atas) -->
-                    <div
-                        class="card-header bg-white d-flex align-items-center justify-content-between py-3 flex-wrap gap-2">
+                    <div class="card-header bg-white d-flex align-items-center justify-content-between py-3 flex-wrap gap-2">
                         <!-- Judul di Kiri -->
-                        <h3 class="card-title mb-0" onclick="triggerDelete()">Kalender Change Over</h3>
+                        <h3 class="card-title mb-0">Kalender Change Over</h3>
 
                         <!-- Month Navigation di Tengah -->
                         <div class="btn-group mx-auto">

@@ -48,19 +48,14 @@ class WhatsappService
             ]);
 
             if ($response->successful()) {
-                WhatsappLog::create([
-                    'target_group' => $waTargetGroup,
-                    'message' => $message,
-                    'message_id' => $response->json('message_id') ?? null,
-                    'status' => 'sent'
-                ]);
+                // WhatsappLog::create([
+                //     'target_group' => $waTargetGroup,
+                //     'message' => $message,
+                //     'message_id' => $response->json('message_id') ?? null,
+                //     'status' => 'sent'
+                // ]);
                 return true;
             } else {
-                WhatsappLog::create([
-                    'target_group' => $waTargetGroup,
-                    'message' => $message,
-                    'status' => 'failed'
-                ]);
                 Log::error("Gagal mengirim WA Gateway: " . $response->body());
                 return false;
             }
