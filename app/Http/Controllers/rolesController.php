@@ -90,14 +90,14 @@ class rolesController extends Controller
     // 2. Memproses update data ke database
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'role'          => 'required|string|max:255',
-            'department_id' => 'required|exists:department,id',
-        ], [
-            'role.required'          => 'Pilihan hak akses (role) wajib diisi.',
-            'department_id.required' => 'Pilihan departemen wajib diisi.',
-            'department_id.exists'   => 'Departemen yang dipilih tidak valid.',
-        ]);
+        // $request->validate([
+        //     'role'          => 'required|string|max:255',
+        //     'department_id' => 'required|exists:department,id',
+        // ], [
+        //     'role.required'          => 'Pilihan hak akses (role) wajib diisi.',
+        //     'department_id.required' => 'Pilihan departemen wajib diisi.',
+        //     'department_id.exists'   => 'Departemen yang dipilih tidak valid.',
+        // ]);
 
         try {
             $role = Role::findOrFail($id);

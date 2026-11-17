@@ -91,7 +91,7 @@
 
             $.ajax({
                 url: '/roles/' + id,
-                type: 'POST', // Menggunakan POST karena membawa _method PUT
+                type: 'PUT', // Menggunakan POST karena membawa _method PUT
                 data: formData,
                 success: function(response) {
                     if (response.success) {
