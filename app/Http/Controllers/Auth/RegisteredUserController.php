@@ -45,7 +45,7 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name'          => ['required', 'string', 'max:255'],
             'nik'           => ['required', 'string', 'max:50', 'unique:users,nik'],
-            'email'         => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+            'email'         => ['required', 'string', 'lowercase', 'email', 'max:255'],
             'password'      => ['required'],
             'department_id' => ['required', 'exists:departments,id'],
             'role_id'       => ['required', 'exists:roles,id'],
@@ -54,7 +54,6 @@ class RegisteredUserController extends Controller
             'nik.required'           => 'NIK wajib diisi.',
             'nik.unique'             => 'NIK sudah terdaftar.',
             'email.required'         => 'Email wajib diisi.',
-            'email.unique'           => 'Email sudah terdaftar.',
             'password.required'      => 'Password wajib diisi.',
             'department_id.required' => 'Departemen wajib dipilih.',
             'role_id.required'       => 'Role wajib dipilih.',
