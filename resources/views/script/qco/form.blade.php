@@ -69,21 +69,30 @@
             e.preventDefault();
 
             let formData = new FormData();
-
-            // Masukkan id_qco
             formData.append('id_qco', $('#id_qco').val());
-
-            // Masukkan _token CSRF
             formData.append('_token', $('input[name="_token"]').val());
 
-            // Loop data dari rowFilesMap dan pastikan checkbox-nya tercentang
-            console.log(rowFilesMap);
+            let hasError = false;
+            let errorMessage = '';
 
             $.each(rowFilesMap, function(index, files) {
                 let checkbox = $(`#list-${window.globalData.listPreparation[index].id}`);
 
-                if (checkbox.is(':checked') && !checkbox.is(':disabled')) {
+                // Hanya proses jika checkbox dicentang
+                if (checkbox.is(':checked')) {
                     let idList = checkbox.val();
+
+                    // === PERBAIKAN: Ambil nama item dari label atau teks terdekat dari checkbox ===
+                    let listName = checkbox.closest('.card, .row, div').find('label, span')
+                        .first().text().trim() || 'Item Checklist';
+
+                    // Cek apakah array file kosong atau tidak ada isinya
+                    if (!files || files.length === 0) {
+                        hasError = true;
+                        errorMessage = `Item "${listName}" wajib melampirkan file!`;
+                        return false; // Keluar dari loop $.each
+                    }
+
                     formData.append(`items[${index}][id_list]`, idList);
 
                     // Masukkan setiap file ke FormData secara biner
@@ -93,12 +102,23 @@
                 }
             });
 
+            // Jika ditemukan error validasi file kosong di frontend
+            if (hasError) {
+                Swal.fire({
+                    title: 'Peringatan!',
+                    text: errorMessage,
+                    icon: 'warning'
+                });
+                return; // Hentikan proses AJAX
+            }
+
+            // Lanjutkan AJAX jika lolos validasi
             $.ajax({
                 url: "{{ route('QCO.preparation.store') }}",
                 method: "POST",
                 data: formData,
-                contentType: false, // Wajib false untuk upload file
-                processData: false, // Wajib false untuk upload file
+                contentType: false,
+                processData: false,
                 success: function(response) {
                     if (response.success) {
                         Swal.fire({
@@ -108,8 +128,7 @@
                             timer: 1500,
                             showConfirmButton: false
                         }).then(() => {
-                            location
-                                .reload(); // Refresh halaman untuk memperbarui kalender
+                            location.reload();
                         });
                     } else {
                         Swal.fire('Gagal!', response.message || 'Terjadi kesalahan.',
@@ -117,7 +136,11 @@
                     }
                 },
                 error: function(xhr) {
-                    alert('Terjadi kesalahan pada server.');
+                    let errMessage = 'Terjadi kesalahan pada server.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errMessage = xhr.responseJSON.message;
+                    }
+                    Swal.fire('Gagal!', errMessage, 'error');
                     console.log(xhr.responseText);
                 }
             });

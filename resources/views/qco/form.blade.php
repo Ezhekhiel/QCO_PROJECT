@@ -318,8 +318,7 @@
                                                         $badgeContent = "<small class='d-block' style='font-size: 0.7rem;'>[{$cellName}]</small> {$qco->model} ➔ Direschedule";
                                                     } else {
                                                         // Warna normal berdasarkan completion
-                                                        $completionValue =
-                                                            $qco->completion ?? ($qco->percent_checklist ?? 0);
+                                                        $completionValue = $qco->percent_checklist ?? 0;
 
                                                         if ($completionValue == 100) {
                                                             $color_status = 'bg-success text-white';
@@ -369,7 +368,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalCustomWidthLabel">Form Preparation List</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <!-- Ubah data-dismiss menjadi data-bs-dismiss -->
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -388,7 +388,8 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                    <!-- Ubah data-dismiss menjadi data-bs-dismiss -->
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
         </div>

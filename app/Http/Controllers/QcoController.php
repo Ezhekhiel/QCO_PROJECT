@@ -119,7 +119,15 @@ class QcoController extends Controller
         $request->validate([
             'id_qco' => 'required',
             'items' => 'required|array',
-            'items.*.files.*' => 'nullable|mimes:jpg,jpeg,png,pdf,xls,xlsx|max:5120',
+            // Ubah 'nullable' menjadi 'required' dan pastikan berupa array dengan minimal 1 file
+            'items.*.files' => 'required|array|min:1',
+            'items.*.files.*' => 'required|mimes:jpg,jpeg,png,pdf,xls,xlsx|max:5120',
+        ], [
+            // Custom pesan error agar lebih mudah dibaca (opsional)
+            'items.*.files.required' => 'Setiap item yang dipilih wajib melampirkan file.',
+            'items.*.files.min' => 'Setiap item yang dipilih minimal harus memiliki 1 file lampiran.',
+            'items.*.files.*.mimes' => 'Format file tidak valid (diizinkan: jpg, jpeg, png, pdf, xls, xlsx).',
+            'items.*.files.*.max' => 'Ukuran file maksimal adalah 5MB.',
         ]);
 
         $idQco = $request->id_qco;
@@ -144,7 +152,7 @@ class QcoController extends Controller
                             throw new \Exception('Gagal menyimpan data preparation untuk ID list: ' . $idList);
                         }
 
-                        // 2. Cek apakah ada file yang di-upload
+                        // 2. Cek apakah ada file yang di-upload (karena sudah di-validate required, ini pasti ada)
                         if (isset($item['files']) && is_array($item['files'])) {
                             foreach ($item['files'] as $file) {
                                 $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
@@ -176,12 +184,10 @@ class QcoController extends Controller
                     'message' => 'QCO tidak terdaftar!'
                 ], 500);
             }
-            // 2. Tentukan kondisi pengecualian
+
             $whereNot = ($stage === 'Mass Production') ? 'DEVELOPMENT' : 'PE';
 
-            // 3. Query utama menggunakan Laravel 12 syntax
             $count_list = qco___preparation_list::whereRelation('department', 'nama', '!=', $whereNot)->count();
-            // 3. Hitung persentase berdasarkan data real di database
             $jumlah_preparation = qco___preparation::with('qco')->where('id_qco', $idQco)->count();
             $jumlah_completion = ($count_list > 0) ? ($jumlah_preparation / $count_list) * 100 : 0;
             $jumlah_completion = round($jumlah_completion, 2);
@@ -195,15 +201,12 @@ class QcoController extends Controller
                 $updateData['completion_date'] = date('Y-m-d H:i:s');
             }
 
-            // 4. Eksekusi Update ke tabel qco dan validasi apakah barisnya benar-benar ter-update
             $affectedRows = qco::where('id', $idQco)->update($updateData);
 
-            // Jika id_qco tidak ditemukan di database, update akan menghasilkan 0 baris yang berubah
             if ($affectedRows === 0 && $jumlah_preparation > 0) {
                 throw new \Exception('Data QCO utama tidak ditemukan atau tidak ada perubahan data.');
             }
 
-            // Jika semua proses di atas sukses tanpa error, simpan permanen ke database
             DB::commit();
 
             return response()->json([
@@ -212,10 +215,7 @@ class QcoController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            // Jika ada error di baris manapun, batalkan semua perubahan database (Rollback)
             DB::rollBack();
-
-            // Optional: Catat error ke file log Laravel untuk debugging Anda
             Log::error('Error store_preparation: ' . $e->getMessage());
 
             return response()->json([
