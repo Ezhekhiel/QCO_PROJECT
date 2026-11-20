@@ -74,15 +74,21 @@
 
             let hasError = false;
             let errorMessage = '';
+            let newItemCount = 0; // Opsional: cek apakah ada item baru yang dipilih
 
             $.each(rowFilesMap, function(index, files) {
                 let checkbox = $(`#list-${window.globalData.listPreparation[index].id}`);
 
-                // Hanya proses jika checkbox dicentang
+                // Lewati jika checkbox disabled (sudah tersimpan di database)
+                if (checkbox.is(':disabled')) {
+                    return true; // lanjut ke iterasi berikutnya di $.each
+                }
+
+                // Hanya proses jika checkbox dicentang (dan tidak disabled)
                 if (checkbox.is(':checked')) {
+                    newItemCount++;
                     let idList = checkbox.val();
 
-                    // === PERBAIKAN: Ambil nama item dari label atau teks terdekat dari checkbox ===
                     let listName = checkbox.closest('.card, .row, div').find('label, span')
                         .first().text().trim() || 'Item Checklist';
 
@@ -102,14 +108,23 @@
                 }
             });
 
-            // Jika ditemukan error validasi file kosong di frontend
             if (hasError) {
                 Swal.fire({
                     title: 'Peringatan!',
                     text: errorMessage,
                     icon: 'warning'
                 });
-                return; // Hentikan proses AJAX
+                return;
+            }
+
+            // Opsional: cegah submit kosong jika tidak ada item baru yang dicentang
+            if (newItemCount === 0) {
+                Swal.fire({
+                    title: 'Info',
+                    text: 'Pilih minimal satu item baru dan lampirkan filenya.',
+                    icon: 'info'
+                });
+                return;
             }
 
             // Lanjutkan AJAX jika lolos validasi
