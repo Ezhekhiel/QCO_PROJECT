@@ -5,19 +5,15 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\qco;
 use App\Models\qco___preparation_list;
-use App\Models\WhatsappGroup;
-use App\Models\WhatsappLog;
 use App\Models\Holiday;
 use App\Services\WhatsappService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class SendQcoMorningReminder extends Command
 {
     protected $whatsappService;
 
-    // Dependency Injection Service WhatsApp ke dalam Command
     public function __construct(WhatsappService $whatsappService)
     {
         parent::__construct();
@@ -25,68 +21,81 @@ class SendQcoMorningReminder extends Command
     }
 
     protected $signature = 'qco:send-morning-reminder';
-    protected $description = 'Kirim pengingat WhatsApp untuk QCO preparation (Hanya untuk H-3 ke bawah/mendekati Hari H, serta mengabaikan hari libur & weekend)';
+    protected $description = 'Kirim pengingat WhatsApp untuk QCO preparation pada H-3 s/d H-1 hari kerja (mengabaikan weekend & hari libur)';
 
     public function handle()
     {
-        $today = Carbon::today();
-        $todayString = $today->toDateString(); // Format: YYYY-MM-DD
+        $today = Carbon::today()->startOfDay();
 
-        // Cek apakah hari ini weekend (Sabtu/Minggu) atau Hari Libur Nasional
-        $isWeekend = $today->isWeekend();
-        $isHoliday = Holiday::where('holiday_date', $todayString)->exists();
+        // 1. Cek apakah hari ini weekend atau hari libur (termasuk tanggal merah Indonesia di tabel Holiday)
+        if ($this->isNonWorkingDay($today)) {
+            $liburInfo = $today->isWeekend()
+                ? "Weekend (" . $today->translatedFormat('l') . ")"
+                : "Hari Libur / Tanggal Merah";
 
-        if ($isWeekend || $isHoliday) {
-            $liburInfo = $isWeekend ? "Weekend (" . $today->translatedFormat('l') . ")" : "Hari Libur Nasional";
             $msg = "Hari ini adalah {$liburInfo}. Pengingat QCO dibatalkan dan tidak dikirim.";
             $this->info($msg);
             Log::info("QCO Reminder: " . $msg);
             return;
         }
 
-        // Batasi rentang tanggal: Hanya ambil QCO dari hari ini sampai 3 hari ke depan (H-3)
-        // plus QCO yang sudah lewat tapi masih NOT YET jika diperlukan,
-        // namun untuk murni H-3, kita atur batas tanggal maksimumnya adalah $today + 3 hari.
-        $targetMaxDate = $today->copy()->addDays(3)->toDateString();
+        // Ambil daftar tanggal libur sekali saja agar efisien di dalam loop
+        // Rentang cukup lebar: dari 15 hari ke belakang sampai 15 hari ke depan dari hari ini
+        $holidays = Holiday::whereBetween('holiday_date', [
+            $today->copy()->subDays(15)->toDateString(),
+            $today->copy()->addDays(15)->toDateString(),
+        ])->pluck('holiday_date')->flip()->all();
 
-        // 1. Ambil data QCO dari hari ini sampai H-3 (change_over_date antara hari ini dan 3 hari ke depan)
+        // Rentang query awal kita beri buffer 7 hari ke depan agar QCO yang terhalang libur panjang tetap terjaring
+        $queryMaxDate = $today->copy()->addDays(7)->toDateString();
+
         $qcoList = qco::with(['preparations', 'cell_info'])
             ->where('status', '!=', 'CANCEL')
-            ->whereBetween('change_over_date', [$todayString, $targetMaxDate])
+            ->whereBetween('change_over_date', [$today->toDateString(), $queryMaxDate])
             ->orderBy('change_over_date', 'asc')
             ->get();
 
         if ($qcoList->isEmpty()) {
-            $msg = "Tidak ada jadwal Change Over (QCO) dalam rentang H-3 dari hari ini.";
+            $msg = "Tidak ada kandidat jadwal QCO yang mendekati H-3 hari kerja.";
             $this->info($msg);
             Log::info("QCO Reminder: " . $msg);
             return;
         }
 
-        // 2. Ambil master preparation list beserta departemennya
         $masterLists = qco___preparation_list::with('department')->get();
 
         $reminderMessages = [];
-        $reminderMessages[] = "⚠️ *PENGINGAT PERSIAPAN QCO (H-3)* ⚠️";
+        $reminderMessages[] = "⚠️ *PENGINGAT PERSIAPAN QCO (H-3 HARI KERJA)* ⚠️";
         $reminderMessages[] = "Tanggal Hari Ini: " . $today->translatedFormat('d F Y');
         $reminderMessages[] = "----------------------------------------";
 
         $totalPendingFound = 0;
 
         foreach ($qcoList as $qco) {
+            $coDate = Carbon::parse($qco->change_over_date)->startOfDay();
+
+            // Dapatkan 3 tanggal kirim alert (H-3, H-2, H-1 hari kerja) sebelum change_over_date
+            // Array key = urutan hari kerja ke depan (1 = H-1 workday, 2 = H-2 workday, 3 = H-3 workday)
+            $alertWorkdays = $this->getWorkdayAlertDates($coDate, 3, $holidays);
+
+            $todayStr = $today->toDateString();
+            $matchedWorkdayOffset = null;
+
+            foreach ($alertWorkdays as $workdayOffset => $alertDateStr) {
+                if ($alertDateStr === $todayStr) {
+                    $matchedWorkdayOffset = $workdayOffset;
+                    break;
+                }
+            }
+
+            // Jika hari ini BUKAN salah satu dari H-3, H-2, atau H-1 hari kerja dari QCO ini, lewati
+            if ($matchedWorkdayOffset === null) {
+                continue;
+            }
+
             $cellName = $qco->cell_info->area ?? 'Cell ' . $qco->cell;
             $modelName = $qco->model;
-
-            $coDate = Carbon::parse($qco->change_over_date)->startOfDay();
-            $todayDate = $today->copy()->startOfDay();
-
-            // Penentuan label status hari
-            if ($coDate->eq($todayDate)) {
-                $statusLabel = "Hari H";
-            } else {
-                $diffDays = abs($todayDate->diffInDays($coDate));
-                $statusLabel = "H-{$diffDays}";
-            }
+            $statusLabel = "H-{$matchedWorkdayOffset} Hari Kerja";
 
             $uncompletedDepts = [];
 
@@ -113,7 +122,7 @@ class SendQcoMorningReminder extends Command
         }
 
         if ($totalPendingFound === 0) {
-            $this->info("Semua persiapan QCO untuk rentang H-3 sudah lengkap.");
+            $this->info("Tidak ada QCO yang masuk jadwal alert hari ini atau semua persiapan sudah lengkap.");
             return;
         }
 
@@ -122,7 +131,6 @@ class SendQcoMorningReminder extends Command
 
         $finalMessage = implode("\n", $reminderMessages);
 
-        // 3. Kirim pesan menggunakan Service yang sudah di-inject
         try {
             $this->whatsappService->sendGroupMessage($finalMessage);
             $this->info("Peringatan QCO berhasil dikirim ke WhatsApp!");
@@ -131,5 +139,49 @@ class SendQcoMorningReminder extends Command
             $this->error("Gagal mengirim WA: " . $e->getMessage());
             Log::error("QCO Reminder Error: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Mengecek apakah tanggal tertentu adalah weekend atau hari libur di tabel Holiday.
+     */
+    protected function isNonWorkingDay(Carbon $date, array $holidays = []): bool
+    {
+        if ($date->isWeekend()) {
+            return true;
+        }
+
+        $dateStr = $date->toDateString();
+
+        if (!empty($holidays)) {
+            return isset($holidays[$dateStr]);
+        }
+
+        return Holiday::where('holiday_date', $dateStr)->exists();
+    }
+
+    /**
+     * Mengembalikan array tanggal kirim alert mundur sebanyak $days hari kerja dari $targetDate.
+     * Contoh return: [1 => '2026-11-25', 2 => '2026-11-24', 3 => '2026-11-23']
+     */
+    protected function getWorkdayAlertDates(Carbon $targetDate, int $days, array $holidays): array
+    {
+        $cursor = $targetDate->copy()->startOfDay();
+        $alertDates = [];
+        $foundWorkdays = 0;
+        $guard = 0;
+
+        while ($foundWorkdays < $days && $guard < 60) {
+            $cursor->subDay();
+            $guard++;
+
+            if ($this->isNonWorkingDay($cursor, $holidays)) {
+                continue;
+            }
+
+            $foundWorkdays++;
+            $alertDates[$foundWorkdays] = $cursor->toDateString();
+        }
+
+        return $alertDates;
     }
 }

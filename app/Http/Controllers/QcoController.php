@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Services\QcoService;
+use Illuminate\Support\Facades\File;
 
 class QcoController extends Controller
 {
@@ -35,7 +36,7 @@ class QcoController extends Controller
         $start = Carbon::parse($currentMonth)->startOfMonth()->startOfWeek(Carbon::SUNDAY);
         $end = Carbon::parse($currentMonth)->endOfMonth()->endOfWeek(Carbon::SATURDAY);
 
-         $qcoList = qco::with(['qco_status','user', 'user.department', 'user.role','preparations','cell_info','preparations.preparation_file'])
+         $qcoList = qco::with(['qco_status','user', 'user.department', 'user.role','preparations','cell_info','preparations.preparation_file','preparations.user'])
                 ->whereBetween('change_over_date', [$start, $end])
                 ->whereHas('user.department', function ($query) {
                         // Ganti 'PLANNER' dengan nama department yang ingin dicari
@@ -155,7 +156,7 @@ class QcoController extends Controller
                         // 2. Cek apakah ada file yang di-upload (karena sudah di-validate required, ini pasti ada)
                         if (isset($item['files']) && is_array($item['files'])) {
                             foreach ($item['files'] as $file) {
-                                
+
                             $originalName = basename($file->getClientOriginalName());
 
                             $nameWithoutExt = pathinfo($originalName, PATHINFO_FILENAME);
@@ -268,12 +269,46 @@ class QcoController extends Controller
     public function destroy($id_qco, $id_list)
     {
         // 1. Hapus data preparation
-        $deleted = qco___preparation::where([
-            'id_qco' => $id_qco,
-            'id_list' => $id_list
-        ])->delete();
 
-        // 2. Hitung ulang persentase
+        $preparation = qco___preparation::where([
+            'id_qco'  => $id_qco,
+            'id_list' => $id_list
+        ])->first();
+
+        $preparation_id = $preparation?->id;
+
+        // 2. hapus file dan preparation files
+        $preparation_files = qco___preparation_files::where([
+            'preparation_id' => $preparation_id,
+        ])->get();
+
+        if ($preparation_files->isNotEmpty()) {
+            foreach ($preparation_files as $item) {
+                if (!empty($item->file)) {
+                    $filePath = public_path('data_qco/' . $item->file);
+                    if (File::exists($filePath)) {
+                        $deleted = File::delete($filePath);
+
+                        if (!$deleted) {
+                            return "Gagal menhapus files";
+                            Log::warning('Gagal menghapus file: ' . $filePath);
+                        }
+                    } else {
+                            return "File tidak ditemukan di path";
+                        Log::warning('File tidak ditemukan di path: ' . $filePath);
+                    }
+                }
+
+                $item->delete();
+            }
+        }
+
+        // hapus dulu file tadi di table
+        if ($preparation) {
+            $preparation->delete();
+        }
+
+        // 3. Hitung ulang persentase
         $count_list = qco___preparation_list::count();
         $jumlah_preparation = qco___preparation::where('id_qco', $id_qco)->count();
         $jumlah_completion = ($count_list > 0) ? ($jumlah_preparation / $count_list) * 100 : 0;
@@ -283,7 +318,7 @@ class QcoController extends Controller
             'completion' => $jumlah_completion,
         ];
 
-        // 3. Logika Status berdasarkan persentase terbaru
+        // 4. Logika Status berdasarkan persentase terbaru
         if ($jumlah_completion >= 100) {
             $updateData['status'] = 'Done';
             $updateData['completion_date'] = date('Y-m-d');
@@ -292,7 +327,7 @@ class QcoController extends Controller
             $updateData['completion_date'] = null; // Tanggal selesai dihapus/kosongkan
         }
 
-        // 4. Update ke tabel qco
+        // 5. Update ke tabel qco
         $affectedRows = qco::where('id', $id_qco)->update($updateData);
 
         if ($affectedRows === 0) {
@@ -301,6 +336,7 @@ class QcoController extends Controller
                 'message' => 'Data QCO utama tidak ditemukan.'
             ], 404);
         }
+
 
         return response()->json([
             'success' => true,

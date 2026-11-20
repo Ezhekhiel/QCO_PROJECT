@@ -45,6 +45,10 @@ class qco___preparation extends Model
     {
         return $this->hasMany(qco___preparation_files::class, 'preparation_id', 'id');
     }
+    public function user(): HasMany
+    {
+        return $this->hasMany(User::class, 'nik', 'user_update');
+    }
 
     // Relasi ke qco
     public function qco(): BelongsTo

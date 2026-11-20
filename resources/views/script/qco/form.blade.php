@@ -177,12 +177,10 @@
         let submittedListIds = preparationsArray.map(prep => prep.id_list);
 
         // Cek hasil log
-        console.log(dataSelection.status);
         if (dataSelection.status == 'CANCEL') {
             $('#label_modal_checkbox').hide();
             listData += `
                 <div class="card p-4 mb-3 shadow-lg bg-danger text-white border-0 rounded-4 transition-all hover-effect"
-                    onclick="updateStatusList(7,4)"
                     style="cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;">
                     <div class="row align-items-center justify-content-center text-center m-0">
                         <div class="col-12">
@@ -195,15 +193,22 @@
             `;
         } else {
             $('#label_modal_checkbox').show();
+
             $.each(window.globalData.listPreparation, function(index, value) {
                 rowFilesMap[index] = [];
                 let isAlreadySubmitted = submittedListIds.includes(value.id);
+                const matchedPrep = preparationsArray.find(prep => prep.id_list === value.id);
+                const userName = matchedPrep?.user?.[0]?.name;
+                const statusText = userName ? `- Di update oleh ${userName}` : '';
+                const cleanStatus = statusText ? statusText.replace(/^\s*-\s*/, '').trim() : '';
+                const labelText = cleanStatus ? `${cleanStatus}` : 'Sudah Disimpan';
+
 
                 let nameAttr = isAlreadySubmitted ? 'udah' : `items[${index}][id_list]`;
                 let disabledAttr = isAlreadySubmitted ? 'disabled checked' : '';
                 let fileDisabledAttr = isAlreadySubmitted ? 'disabled' : '';
                 let badgeText = isAlreadySubmitted ?
-                    '<span class="badge badge-light text-success float-right px-2 py-1">Sudah Disimpan</span>' :
+                    `<span class="badge bg-light text-dark d-inline-block text-wrap text-start px-2 py-1 mt-2 lh-sm" style="max-width: 100%;">${labelText}</span>` :
                     '';
 
                 // Tambahkan bg-success dan text-white di sini agar seluruh card berwarna hijau & teksnya putih
