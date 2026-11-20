@@ -12,7 +12,7 @@
 
     $(document).ready(function() {
         $('#input_cso').on('submit', function(e) {
-            e.preventDefault(); // Memperbaiki penulisan event.preventDefault()
+            e.preventDefault();
 
             $.ajax({
                 url: "{{ route('qco.form.store') }}",
@@ -23,10 +23,6 @@
                 cache: false,
                 processData: false,
                 beforeSend: function() {
-                    // Jika Anda punya element loading spinner, bisa di-show di sini
-                    // $("#loading-spinner").show();
-
-                    // Atau disable tombol submit agar tidak double-click
                     $('button[type="submit"]').prop('disabled', true).text('Menyimpan...');
                 },
                 success: function(response) {
@@ -41,8 +37,7 @@
                             timer: 1500,
                             showConfirmButton: false
                         }).then(() => {
-                            location
-                                .reload(); // Refresh halaman untuk memperbarui kalender
+                            location.reload();
                         });
                     } else {
                         Swal.fire('Gagal!', response.message || 'Terjadi kesalahan.',
@@ -55,7 +50,6 @@
 
                     let errorMsg = 'Terjadi kesalahan pada server.';
                     if (xhr.responseJSON && xhr.responseJSON.errors) {
-                        // Ambil pesan error validasi pertama dari Laravel
                         let errors = xhr.responseJSON.errors;
                         errorMsg = Object.values(errors)[0][0];
                     } else if (xhr.responseJSON && xhr.responseJSON.message) {
@@ -65,6 +59,7 @@
                 }
             });
         });
+
         $('#formQCO').on('submit', function(e) {
             e.preventDefault();
 
@@ -74,17 +69,15 @@
 
             let hasError = false;
             let errorMessage = '';
-            let newItemCount = 0; // Opsional: cek apakah ada item baru yang dipilih
+            let newItemCount = 0;
 
             $.each(rowFilesMap, function(index, files) {
                 let checkbox = $(`#list-${window.globalData.listPreparation[index].id}`);
 
-                // Lewati jika checkbox disabled (sudah tersimpan di database)
                 if (checkbox.is(':disabled')) {
-                    return true; // lanjut ke iterasi berikutnya di $.each
+                    return true;
                 }
 
-                // Hanya proses jika checkbox dicentang (dan tidak disabled)
                 if (checkbox.is(':checked')) {
                     newItemCount++;
                     let idList = checkbox.val();
@@ -92,16 +85,14 @@
                     let listName = checkbox.closest('.card, .row, div').find('label, span')
                         .first().text().trim() || 'Item Checklist';
 
-                    // Cek apakah array file kosong atau tidak ada isinya
                     if (!files || files.length === 0) {
                         hasError = true;
                         errorMessage = `Item "${listName}" wajib melampirkan file!`;
-                        return false; // Keluar dari loop $.each
+                        return false;
                     }
 
                     formData.append(`items[${index}][id_list]`, idList);
 
-                    // Masukkan setiap file ke FormData secara biner
                     files.forEach(file => {
                         formData.append(`items[${index}][files][]`, file);
                     });
@@ -117,7 +108,6 @@
                 return;
             }
 
-            // Opsional: cegah submit kosong jika tidak ada item baru yang dicentang
             if (newItemCount === 0) {
                 Swal.fire({
                     title: 'Info',
@@ -127,7 +117,6 @@
                 return;
             }
 
-            // Lanjutkan AJAX jika lolos validasi
             $.ajax({
                 url: "{{ route('QCO.preparation.store') }}",
                 method: "POST",
@@ -162,21 +151,15 @@
         });
     });
 
-    // Object penampung file per baris (Key = index baris, Value = array file)
-
     function openModalQCO(id) {
         $('#id_qco').val(id);
-        rowFilesMap = {}; // Reset data file saat modal dibuka
+        rowFilesMap = {};
         var listData = '';
-        var status_checkbox = '';
-        // 1. Ambil array preparations berdasarkan id QCO yang sedang dibuka
-        let preparationsArray = window.globalData.qcoList.find(item => item.id == id)?.preparations || [];
-        let dataSelection = window.globalData.qcoList.find(item => item.id == id) || [];
 
-        // 2. Ambil kumpulan id_list yang sudah pernah di-submit sebelumnya
+        let preparationsArray = window.globalData.qcoList.find(item => item.id == id)?.preparations || [];
+        let dataSelection = window.globalData.qcoList.find(item => item.id == id) || {};
         let submittedListIds = preparationsArray.map(prep => prep.id_list);
 
-        // Cek hasil log
         if (dataSelection.status == 'CANCEL') {
             $('#label_modal_checkbox').hide();
             listData += `
@@ -197,12 +180,9 @@
             $.each(window.globalData.listPreparation, function(index, value) {
                 rowFilesMap[index] = [];
                 let isAlreadySubmitted = submittedListIds.includes(value.id);
-                const matchedPrep = preparationsArray.find(prep => prep.id_list === value.id);
+                const matchedPrep = preparationsArray.find(prep => prep.id_list == value.id);
                 const userName = matchedPrep?.user?.[0]?.name;
-                const statusText = userName ? `- Di update oleh ${userName}` : '';
-                const cleanStatus = statusText ? statusText.replace(/^\s*-\s*/, '').trim() : '';
-                const labelText = cleanStatus ? `${cleanStatus}` : 'Sudah Disimpan';
-
+                const labelText = userName ? `Di update oleh ${userName}` : 'Sudah Disimpan';
 
                 let nameAttr = isAlreadySubmitted ? 'udah' : `items[${index}][id_list]`;
                 let disabledAttr = isAlreadySubmitted ? 'disabled checked' : '';
@@ -211,17 +191,14 @@
                     `<span class="badge bg-light text-dark d-inline-block text-wrap text-start px-2 py-1 mt-2 lh-sm" style="max-width: 100%;">${labelText}</span>` :
                     '';
 
-                // Tambahkan bg-success dan text-white di sini agar seluruh card berwarna hijau & teksnya putih
                 let cardClass = isAlreadySubmitted ? 'bg-success text-white border-success' : 'border';
                 let textColor = isAlreadySubmitted ? 'text-white' : '';
                 let onClick = isAlreadySubmitted ?
                     `onclick="updateStatusList(${value.id},${id})" style="cursor: pointer;"` : '';
 
-
                 listData += `
-                    <div class="card p-3 mb-2 shadow-sm ${cardClass}" ${ onClick }}>
+                    <div class="card p-3 mb-2 shadow-sm ${cardClass}" ${onClick}>
                         <div class="row align-items-center">
-                            <!-- Checkbox & Label -->
                             <div class="col-md-4">
                                 <div class="custom-control custom-checkbox">
                                     <input type="checkbox" class="custom-control-input checkbox-item"
@@ -233,7 +210,6 @@
                                 ${badgeText ? '<div class="mt-2">' + badgeText + '</div>' : ''}
                             </div>
 
-                            <!-- Input File per List -->
                             <div class="col-md-8">
                                 <div class="form-group mb-0">
                                     <input type="file" class="form-control-file file-input-item"
@@ -245,7 +221,6 @@
                                         ${isAlreadySubmitted ? '<i class="fas fa-check-circle"></i> File untuk item ini sudah di-upload dan dikunci.' : 'Format: Gambar, PDF, Excel (Bisa pilih banyak file sekaligus)'}
                                     </small>
 
-                                    <!-- Preview List File -->
                                     <ul class="list-group mt-2 preview-list-${index}">
                                         <li class="list-group-item ${textColor} py-1 small bg-transparent border">
                                             ${isAlreadySubmitted ? '<i class="fas fa-database"></i> Tersimpan di database' : 'Belum ada file dipilih'}
@@ -258,34 +233,32 @@
             });
         }
 
-
         $("#preparation_list").html(listData);
-        $('#modalQCO').modal('show');
+
+        const modalElement = document.getElementById('modalQCO');
+        if (modalElement && window.bootstrap?.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
+        } else {
+            console.error('Bootstrap Modal belum tersedia.');
+        }
     }
 
-    // 1. Handle saat user memilih file (Akumulasi & Auto-Check)
     $(document).on('change', '.file-input-item', function(e) {
         let index = $(this).data('index');
         let newFiles = Array.from(e.target.files);
 
         if (newFiles.length > 0) {
-            // Tambahkan file baru ke array yang sudah ada (akumulasi dari folder berbeda)
             newFiles.forEach(file => {
                 rowFilesMap[index].push(file);
             });
 
-            // OTOMATIS CHECKLIST JIKA USER MEMILIH FILE
             $(`#list-${window.globalData.listPreparation[index].id}`).prop('checked', true);
-
-            // Render ulang tampilan preview file
             renderFileList(index);
         }
 
-        // Reset value input file agar bisa memilih file dengan nama yang sama lagi jika diperlukan
         $(this).val('');
     });
 
-    // 2. Fungsi Render Daftar File & Tombol Hapus (X)
     function renderFileList(index) {
         let $previewList = $(`.preview-list-${index}`);
         $previewList.empty();
@@ -307,14 +280,14 @@
                 '<i class="fas fa-file-excel text-primary mr-1"></i>';
 
             $previewList.append(`
-            <li class="list-group-item py-1 small d-flex justify-content-between align-items-center">
-                <span>${icon} ${file.name}</span>
-                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 remove-file-item"
-                        data-row="${index}" data-fileindex="${fileIndex}" title="Hapus file">
-                    &times;
-                </button>
-            </li>
-        `);
+                <li class="list-group-item py-1 small d-flex justify-content-between align-items-center">
+                    <span>${icon} ${file.name}</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 remove-file-item"
+                            data-row="${index}" data-fileindex="${fileIndex}" title="Hapus file">
+                        &times;
+                    </button>
+                </li>
+            `);
         });
     }
 
@@ -360,18 +333,11 @@
         });
     }
 
-    // 3. Handle Tombol Hapus (X) per File
     $(document).on('click', '.remove-file-item', function() {
         let rowIndex = $(this).data('row');
         let fileIndex = $(this).data('fileindex');
 
-        // Hapus file dari array berdasarkan index-nya
         rowFilesMap[rowIndex].splice(fileIndex, 1);
-
-        // Render ulang preview
         renderFileList(rowIndex);
-
-        // (Opsional) Jika file habis dihapus, apakah checkbox mau di-uncheck otomatis?
-        // Biarkan tetap tercheck atau uncheck sesuai kebutuhan.
     });
 </script>
