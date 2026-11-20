@@ -1,18 +1,25 @@
-<script src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js"
-    crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+{{-- AdminLTE lokal --}}
 <script src="{{ asset('/js/adminlte.js') }}"></script>
+
 <script>
     const SELECTOR_SIDEBAR_WRAPPER = '.sidebar-wrapper';
+
     const Default = {
         scrollbarTheme: 'os-theme-light',
         scrollbarAutoHide: 'leave',
         scrollbarClickScroll: true,
     };
-    document.addEventListener('DOMContentLoaded', function() {
+
+    // Inisialisasi scrollbar setelah library Vite siap
+    document.addEventListener('DOMContentLoaded', function () {
         const sidebarWrapper = document.querySelector(SELECTOR_SIDEBAR_WRAPPER);
-        if (sidebarWrapper && OverlayScrollbarsGlobal?.OverlayScrollbars !== undefined) {
-            OverlayScrollbarsGlobal.OverlayScrollbars(sidebarWrapper, {
+
+        if (
+            sidebarWrapper &&
+            window.OverlayScrollbarsGlobal?.OverlayScrollbars
+        ) {
+            window.OverlayScrollbarsGlobal.OverlayScrollbars(sidebarWrapper, {
                 scrollbars: {
                     theme: Default.scrollbarTheme,
                     autoHide: Default.scrollbarAutoHide,
@@ -20,23 +27,27 @@
                 },
             });
         }
-    });
-</script>
 
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" crossorigin="anonymous"></script>
-<script>
-    new Sortable(document.querySelector('.connectedSortable'), {
-        group: 'shared',
-        handle: '.card-header',
+        // SortableJS lokal
+        const sortableElement = document.querySelector('.connectedSortable');
+
+        if (sortableElement && window.Sortable) {
+            new window.Sortable(sortableElement, {
+                group: 'shared',
+                handle: '.card-header',
+            });
+
+            const cardHeaders = document.querySelectorAll(
+                '.connectedSortable .card-header'
+            );
+
+            cardHeaders.forEach((cardHeader) => {
+                cardHeader.style.cursor = 'move';
+            });
+        }
     });
 
-    const cardHeaders = document.querySelectorAll('.connectedSortable .card-header');
-    cardHeaders.forEach((cardHeader) => {
-        cardHeader.style.cursor = 'move';
-    });
-</script>
-
-<script>
+    // Pengaturan tema
     const bodyElement = document.body;
     const toggleButton = document.getElementById('theme-toggle');
     const themeIcon = document.getElementById('theme-icon');
@@ -64,6 +75,7 @@
         const newGridColor = theme === 'dark' ? '#555' : '#e0e0e0';
 
         let allCharts = [];
+
         allCharts.forEach(chart => {
             chart.updateOptions({
                 theme: {
@@ -100,45 +112,49 @@
     }
 
     applyTheme(initialTheme);
+
     if (toggleButton) {
         toggleButton.addEventListener('click', toggleTheme);
     }
-</script>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll(".flip-header").forEach(header => {
-            header.addEventListener("click", function(e) {
+    // Flip card
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.flip-header').forEach(header => {
+            header.addEventListener('click', function (e) {
                 e.stopPropagation();
-                let container = this.closest(".flip-container");
+
+                let container = this.closest('.flip-container');
+
                 if (container) {
-                    container.classList.toggle("active");
+                    container.classList.toggle('active');
                 }
             });
         });
     });
 
+    // Mengumpulkan data form
     function getAllDataFormControl(option) {
         var form = {};
-        $('.form-' + option).each(function() {
+
+        $('.form-' + option).each(function () {
             var name = $(this).attr('name');
             var value = $(this).val();
 
-            // Pastikan input memiliki atribut name dan name tersebut tidak kosong
             if (name) {
-                // Jika namanya berupa array seperti 'qty_incoming[]', kumpulkan isinya ke dalam array []
                 if (name.endsWith('[]')) {
                     var cleanName = name.replace('[]', '');
+
                     if (!form[cleanName]) {
                         form[cleanName] = [];
                     }
+
                     form[cleanName].push(value);
                 } else {
-                    // Untuk input biasa (bukan array)
                     form[name] = value;
                 }
             }
         });
+
         return form;
     }
 </script>

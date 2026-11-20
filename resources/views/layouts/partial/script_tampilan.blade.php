@@ -1,10 +1,3 @@
-<script src="https://cdnjs.cloudflare.com/ajax/libs/image-map-resizer/1.0.10/js/imageMapResizer.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-    imageMapResize();
-</script>
-
 <!-- ChartJS -->
 <script>
     function fullscreen(btn, status) {

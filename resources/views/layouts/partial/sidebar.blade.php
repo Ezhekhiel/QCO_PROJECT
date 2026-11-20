@@ -117,6 +117,7 @@
                 @endauth
 
                 <!--end::Sidebar Menu-->
+            </ul>    
         </nav>
     </div>
     <!--end::Sidebar Wrapper-->
