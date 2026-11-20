@@ -155,7 +155,21 @@ class QcoController extends Controller
                         // 2. Cek apakah ada file yang di-upload (karena sudah di-validate required, ini pasti ada)
                         if (isset($item['files']) && is_array($item['files'])) {
                             foreach ($item['files'] as $file) {
-                                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                                
+                            $originalName = basename($file->getClientOriginalName());
+
+                            $nameWithoutExt = pathinfo($originalName, PATHINFO_FILENAME);
+                            $extension = $file->getClientOriginalExtension();
+
+                            $filename = $originalName;
+                            $counter = 1;
+
+                            // Jika nama file sudah ada, tambahkan nomor agar tidak tertimpa
+                            while (file_exists(public_path('data_qco/' . $filename))) {
+                                $filename = $nameWithoutExt . ' (' . $counter . ').' . $extension;
+                                $counter++;
+                            }
+
 
                                 // Pindahkan file fisik
                                 if (!$file->move(public_path('data_qco'), $filename)) {
