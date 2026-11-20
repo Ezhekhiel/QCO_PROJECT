@@ -20,9 +20,10 @@
     },
     "dependencies": {
         "@fontsource/source-sans-3": "^5.3.1",
+        "@popperjs/core": "^2.11.8",
         "apexcharts": "^3.37.1",
-        "bootstrap": "^5.3.2",
-        "bootstrap-icons": "^1.13.1",
+        "bootstrap": "^5.3.9",
+        "bootstrap-icons": "^1.13.2",
         "daterangepicker": "^3.1.0",
         "image-map-resizer": "^1.0.10",
         "jquery": "^4.0.0",
