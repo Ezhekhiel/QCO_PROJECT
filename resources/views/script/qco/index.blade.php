@@ -852,10 +852,22 @@
                     bar: {
                         borderRadius: 4,
                         columnWidth: '50%',
-                        distributed: false
+                        distributed: true // WAJIB true agar tiap bar bisa beda warna
                     }
                 },
-                colors: ['#0d6efd'],
+                colors: [
+                    function({
+                        value
+                    }) {
+                        let num = Number(value) || 0;
+                        if (num >= 100) return '#198754'; // Bootstrap success (100%)
+                        if (num > 50) return '#ffc107'; // Bootstrap warning (> 50%)
+                        return '#dc3545'; // Bootstrap danger (<= 50%)
+                    }
+                ],
+                legend: {
+                    show: false // Karena distributed: true otomatis memunculkan legend per kategori
+                },
                 dataLabels: {
                     enabled: true,
                     formatter: function(val) {
@@ -867,7 +879,13 @@
                     style: {
                         fontSize: '10px',
                         fontWeight: '600',
-                        colors: ["#ffffff"]
+                        colors: [function({
+                            value
+                        }) {
+                            let num = Number(value) || 0;
+                            // Teks gelap untuk bar kuning agar kontras, putih untuk hijau & merah
+                            return (num > 50 && num < 100) ? '#212529' : '#ffffff';
+                        }]
                     }
                 },
                 xaxis: {
