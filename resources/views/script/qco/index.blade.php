@@ -371,25 +371,13 @@
 
     // Object penampung file per baris (Key = index baris, Value = array file)
 
-        window.openModalQCO = function(id) {
+    window.openModalQCO = function(id) {
         getDataAjaxModal(id);
 
         $('#id_qco').val(id);
-<<<<<<< HEAD
         toggleModalQCO('modalQCO', 'show');
     }
-=======
 
-        const modalElement = document.getElementById('modalQCO');
-
-        if (modalElement && window.bootstrap?.Modal) {
-            window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
-        } else {
-            console.error('Bootstrap Modal belum tersedia.');
-        }
-    };
-
->>>>>>> b8851f2f5afa51cdfc7ff678cad315c7151a7057
 
     function updateQCO() {
         var id_qco = $('#id_qco').val();
