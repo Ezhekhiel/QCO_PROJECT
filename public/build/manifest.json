@@ -168,15 +168,15 @@
     "src": "node_modules/@fontsource/source-sans-3/files/source-sans-3-vietnamese-700-normal.woff2"
   },
   "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff": {
-    "file": "assets/bootstrap-icons-BHUGvtHM.woff",
+    "file": "assets/bootstrap-icons-BeopsB42.woff",
     "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff"
   },
   "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2": {
-    "file": "assets/bootstrap-icons-DJdhg9lH.woff2",
+    "file": "assets/bootstrap-icons-mSm7cUeB.woff2",
     "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-moi2ajNH.css",
+    "file": "assets/app-Deq_Hr6x.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -185,16 +185,16 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-C1F00eL-.js",
+    "file": "assets/app-DgkW1aur.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-zhAFGx5q.css"
+      "assets/app-ydwHwD6w.css"
     ],
     "assets": [
-      "assets/bootstrap-icons-DJdhg9lH.woff2",
-      "assets/bootstrap-icons-BHUGvtHM.woff",
+      "assets/bootstrap-icons-mSm7cUeB.woff2",
+      "assets/bootstrap-icons-BeopsB42.woff",
       "assets/source-sans-3-cyrillic-ext-400-normal-BwJdxs7r.woff2",
       "assets/source-sans-3-cyrillic-ext-400-normal-BqOlcezh.woff",
       "assets/source-sans-3-cyrillic-400-normal-DjhbW-4D.woff2",

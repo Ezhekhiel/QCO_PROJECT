@@ -1,8 +1,9 @@
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- jQuery Lokal -->
+<script src="{{ asset('vendor/jquery.min.js') }}"></script>
 
-<!-- apexcharts -->
-<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.37.1/dist/apexcharts.min.js"
-    integrity="sha256-+vh8GkaU7C9/wbSLIcwq82tQ2wTf44aOHA8HlBMwRI8=" crossorigin="anonymous"></script>
+<!-- ApexCharts Lokal -->
+<script src="{{ asset('vendor/apexcharts.min.js') }}"></script>
+
 <script>
     window.globalData = {
         qcoList: @json($qcoList),
@@ -10,6 +11,7 @@
         planMasterData: @json($planMaster),
         qcoListData: @json($qcoList)
     };
+
     let isTableLoaded = false;
     let rowFilesMap = {};
     const isProduction = @json($isProduction);
@@ -369,16 +371,20 @@
 
     // Object penampung file per baris (Key = index baris, Value = array file)
 
-    function openModalQCO(id) {
+        window.openModalQCO = function(id) {
         getDataAjaxModal(id);
+
         $('#id_qco').val(id);
+
         const modalElement = document.getElementById('modalQCO');
+
         if (modalElement && window.bootstrap?.Modal) {
             window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
         } else {
             console.error('Bootstrap Modal belum tersedia.');
         }
-    }
+    };
+
 
     function updateQCO() {
         var id_qco = $('#id_qco').val();
