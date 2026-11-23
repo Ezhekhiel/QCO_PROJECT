@@ -372,7 +372,12 @@
     function openModalQCO(id) {
         getDataAjaxModal(id);
         $('#id_qco').val(id);
-        $('#modalQCO').modal('show');
+        const modalElement = document.getElementById('modalQCO');
+        if (modalElement && window.bootstrap?.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
+        } else {
+            console.error('Bootstrap Modal belum tersedia.');
+        }
     }
 
     function updateQCO() {
