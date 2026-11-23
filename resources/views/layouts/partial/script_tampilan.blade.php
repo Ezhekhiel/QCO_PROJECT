@@ -64,4 +64,19 @@
             body.classList.remove('keyboard-open');
         });
     });
+
+    function toggleModalQCO(id, action = 'show') {
+        const modalElement = document.getElementById(id);
+        if (!modalElement || !window.bootstrap?.Modal) {
+            console.error('Bootstrap Modal belum tersedia.');
+            return;
+        }
+
+        const modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalElement);
+        if (action === 'hide') {
+            modalInstance.hide();
+        } else {
+            modalInstance.show();
+        }
+    }
 </script>

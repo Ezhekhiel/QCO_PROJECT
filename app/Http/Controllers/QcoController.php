@@ -99,6 +99,7 @@ class QcoController extends Controller
             'model' => 'required|string',
             'cell' => 'required|integer',
             'stage' => 'required|string',
+            'description' => 'required|string',
         ]);
 
         try {

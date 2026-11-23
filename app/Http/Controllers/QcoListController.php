@@ -10,7 +10,7 @@ use App\Models\qco___preparation_list;
 class QcoListController extends Controller
 {
     public function index() {
-        $department = department::get();
+        $department = department::orderBy('nama')->get();
         return view('qco.qco_list',['department'=>$department]);
     }
     public function main() {

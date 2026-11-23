@@ -9,4 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('qco:send-morning-reminder')->dailyAt('07:00');
-Schedule::command('whatsapp:delete-daily-logs')->dailyAt('18:00');
+// Schedule::command('whatsapp:delete-daily-logs')->dailyAt('18:00');
+Schedule::command('holiday:sync')->monthly();

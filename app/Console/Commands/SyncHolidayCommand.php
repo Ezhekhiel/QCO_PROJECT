@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Console\Commands;
+
 use App\Models\Holiday;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
@@ -11,35 +12,48 @@ class SyncHolidayCommand extends Command
 
     protected $description = 'Sync national holidays';
 
-    public function handle()
+    public function handle(): int
     {
         $year = now()->year;
 
-        $response = Http::get(
-            "https://libur.deno.dev/api?year={$year}"
-        );
+        $response = Http::timeout(10)
+            ->retry(2, 500)
+            ->get('https://api-harilibur.pages.dev/api', [
+                'year' => $year,
+            ]);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
+            $this->error("API gagal (HTTP {$response->status()})");
 
-            $this->error('API gagal');
-
-            return;
+            return self::FAILURE;
         }
 
         $holidays = $response->json();
 
-        foreach ($response->json() as $holiday) {
+        if (! is_array($holidays)) {
+            $this->error('Format respons API tidak valid.');
 
-            Holiday::updateOrCreate(
-                [
-                    'holiday_date' => $holiday['date']
-                ],
-                [
-                    'description' => $holiday['name']
-                ]
-            );
+            return self::FAILURE;
         }
 
-        $this->info('Holiday synced');
+        $synced = 0;
+
+        foreach ($holidays as $holiday) {
+            // Filter hanya libur nasional (mengabaikan libur daerah seperti Bali)
+            if (empty($holiday['is_national_holiday'])) {
+                continue;
+            }
+
+            Holiday::updateOrCreate(
+                ['holiday_date' => $holiday['holiday_date']],
+                ['description' => $holiday['holiday_name']]
+            );
+
+            $synced++;
+        }
+
+        $this->info("Holiday synced ({$synced} data untuk tahun {$year}).");
+
+        return self::SUCCESS;
     }
 }

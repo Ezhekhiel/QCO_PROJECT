@@ -322,7 +322,6 @@ class qcoDashboardController extends Controller
     }
     public function update(Request $request, QcoService $qcoService) {
         $user = Auth::user();
-        $edit_model = $request->edit_model;
         $edit_date = $request->edit_date;
         $id_qco_update = $request->id_qco_update;
 
@@ -336,20 +335,29 @@ class qcoDashboardController extends Controller
         }
 
         // Ubah status record lama menjadi CANCEL
-        qco::where('id', $id_qco_update)->update(['status' => "CANCEL"]);
+        // qco::where('id', $id_qco_update)->update(['status' => "CANCEL"]);
 
+        $get_list = qco___preparation::with('preparation_file')->where('id_qco',$id_qco_update)->get();
+        return $get_list;
+        $list_copy =[];
+        foreach ($get_list as $a) {
+            foreach ($a->preparation_file as $b) {
+                $list_copy[$a->id_list][]=$b->file;
+            }
+        }
         try {
             $qcoService->createQco([
                 'nik' => $user->nik,
                 'change_over_date' => $edit_date,
-                'model' => $edit_model,
+                'model' => $qco->model,
                 'cell' => $qco->cell,
                 'stage' => $qco->stage,
                 'status_plan' => 'rescheduled', // <-- SET STATUS PLAN
                 'parent_id'   => $qco->id,      // <-- ISI PARENT ID DARI ID LAMA
                 'option'      => 'Update',
                 'model_lama'  => $qco->model,
-                'tanggal_lama' => $qco->change_over_date
+                'tanggal_lama' => $qco->change_over_date,
+                'list_copy'=>$list_copy
             ]);
 
             return response()->json([

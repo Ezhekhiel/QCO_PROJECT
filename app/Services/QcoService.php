@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\qco;
 use App\Models\qco___status;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class QcoService {
     protected $whatsappService;
@@ -13,28 +14,51 @@ class QcoService {
         $this->whatsappService = $whatsappService;
     }
 
-    public function createQco(array $data) {
-        // Cek data eksis
-        $exist_qco = qco::where([
-            'change_over_date' => $data['change_over_date'],
-            'model' => $data['model']
-        ])->exists();
+    public function createQco(array $data)
+    {
+        // Cek data eksis (sesuaikan jika perlu per cell/area)
+        $exist_qco = qco::where('change_over_date', $data['change_over_date'])
+            ->where('model', $data['model'])
+            ->exists();
 
         if ($exist_qco) {
             throw new \Exception('Data tersebut sudah ada!');
         }
 
-        $qco = qco::create($data);
+        $qco = null;
 
-        qco___status::firstOrCreate([
-            'id_qco' => $qco->id
-        ]);
-        $qco->load('cell_info');
+        DB::transaction(function () use ($data, &$qco) {
+            $qco = qco::create($data);
 
-        // Format Tanggal Baru
+            qco___status::firstOrCreate([
+                'id_qco' => $qco->id,
+            ]);
+
+            $qco->load('cell_info');
+
+            if (!empty($data['parent_id'])) {
+                $get_list = qco___preparation::with('preparation_file')
+                    ->where('id_qco', $data['parent_id'])
+                    ->get();
+
+                foreach ($get_list as $a) {
+                    $preparation = qco___preparation::create([
+                        'id_qco'  => $qco->id,
+                        'id_list' => $a->id_list,
+                    ]);
+
+                    foreach ($a->preparation_file as $b) {
+                        qco___preparation_files::create([
+                            'preparation_id' => $preparation->id,
+                            'file'           => $b->file,
+                        ]);
+                    }
+                }
+            }
+        });
+
+        // Format tanggal & keterangan waktu
         $coDate = Carbon::parse($qco->change_over_date)->translatedFormat('d M Y');
-
-        // Cek apakah tanggal QCO adalah Hari Ini atau Besok
         $today = Carbon::today();
         $targetDate = Carbon::parse($qco->change_over_date)->startOfDay();
 
@@ -45,35 +69,42 @@ class QcoService {
             $ketTanggal = "BESOK ({$coDate})";
         }
 
-        // Penambahan info model & tanggal lama jika ini adalah update/reschedule
+        // Info perubahan jika Update / Reschedule
         $text_update = '';
-        if (isset($data['option']) && $data['option'] == "Update") {
+        if (($data['option'] ?? null) === 'Update') {
             $model_lama = $data['model_lama'] ?? '-';
-
-            // Format Tanggal Lama
-            $tglLamaFormatted = '-';
-            if (isset($data['tanggal_lama'])) {
-                $tglLamaFormatted = Carbon::parse($data['tanggal_lama'])->translatedFormat('d M Y');
-            }
+            $tglLamaFormatted = !empty($data['tanggal_lama'])
+                ? Carbon::parse($data['tanggal_lama'])->translatedFormat('d M Y')
+                : '-';
 
             $text_update = "\n🔄 *Perubahan dari Model:* {$model_lama} (Semula tgl: {$tglLamaFormatted})";
         }
 
         // Header pesan dinamis
         $headerMessage = "📢 *JADWAL QCO BARU DIBUAT* 📢";
-        if (isset($data['status_plan']) && $data['status_plan'] == 'rescheduled') {
+        if (($data['status_plan'] ?? null) === 'rescheduled') {
             $headerMessage = "⚠️ *JADWAL QCO DI-RESCHEDULE UNTUK " . strtoupper($ketTanggal) . "* ⚠️";
         }
 
-        $message = $headerMessage . "\n\n" .
-                "*Model:* {$qco->model}\n" .
-                "*Cell:* {$qco->cell_info->area}\n" .
-                "*Tanggal CO:* {$coDate}\n" .
-                "*Stage:* {$qco->stage}\n" .
-                "Mohon segera lakukan persiapan checklist yang dibutuhkan. Terima kasih! 🙏\n" .
-                $text_update;
+        $area = $qco->cell_info?->area ?? '-';
+        $waktuInfo = $targetDate->equalTo($today) || $targetDate->equalTo($today->copy()->addDay())
+            ? " ({$ketTanggal})"
+            : '';
 
-        $this->whatsappService->sendGroupMessage($message);
+        $message = $headerMessage . "\n\n" .
+            "*Model:* {$qco->model}\n" .
+            "*Cell:* {$area}\n" .
+            "*Tanggal CO:* {$coDate}{$waktuInfo}\n" .
+            "*Stage:* {$qco->stage}\n" .
+            "*Description:* {$qco->description}\n" .
+            "Mohon segera lakukan persiapan checklist yang dibutuhkan. Terima kasih! 🙏" .
+            $text_update;
+
+        try {
+            $this->whatsappService->sendGroupMessage($message);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return $qco;
     }

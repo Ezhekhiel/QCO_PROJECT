@@ -44,7 +44,7 @@
                         success: function(response) {
                             if (response.status === 'success') {
                                 // Tutup modal Bootstrap
-                                $('#modalUbahQCO').modal('hide');
+                                toggleModalQCO('modalUbahQCO', 'hide');
 
                                 Swal.fire({
                                     title: 'Berhasil!',
@@ -372,18 +372,13 @@
     function openModalQCO(id) {
         getDataAjaxModal(id);
         $('#id_qco').val(id);
-        const modalElement = document.getElementById('modalQCO');
-        if (modalElement && window.bootstrap?.Modal) {
-            window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
-        } else {
-            console.error('Bootstrap Modal belum tersedia.');
-        }
+        toggleModalQCO('modalQCO', 'show');
     }
 
     function updateQCO() {
         var id_qco = $('#id_qco').val();
         $('#id_qco_update').val(id_qco);
-        $('#modalUbahQCO').modal('show');
+        toggleModalQCO('modalUbahQCO', 'show');
     }
 
     function updateStatusCancel() {

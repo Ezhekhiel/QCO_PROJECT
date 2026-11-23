@@ -508,7 +508,7 @@
                                             <div class="row">
                                                 <div class="col-6">
                                                     <button onclick="updateQCO()" class="btn btn-primary btn-sm w-100"
-                                                        type="button">UNPLAN</button>
+                                                        type="button">Re-Schedule</button>
                                                 </div>
                                                 <div class="col-6">
                                                     <button onclick="cancelQCO()" class="btn btn-danger btn-sm w-100"
@@ -654,18 +654,13 @@
                 <form id="formUbahQCO">
                     <input type="hidden" name="id_qco_update" id="id_qco_update">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="modalUbahQCOLimit">Unplan Form</h5>
+                        <h5 class="modal-title" id="modalUbahQCOLimit">Re-Schedule Form</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <!-- Token CSRF -->
                         <input type="hidden" name="_token" value="{{ csrf_token() }}">
                         <!-- Hidden ID untuk menyimpan ID QCO yang sedang diedit -->
-                        <div class="mb-3">
-                            <label for="edit_nama_field" class="form-label">Model</label>
-                            <input type="text" class="form-control" id="edit_model" name="edit_model" required>
-                        </div>
-
                         <div class="mb-3">
                             <label for="edit_completion" class="form-label">Change Over Date</label>
                             <input type="date" class="form-control" id="edit_date" name="edit_date" min="0"
