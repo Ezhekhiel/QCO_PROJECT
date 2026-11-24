@@ -45,9 +45,15 @@
             "npm run build"
         ],
         "dev": [
+<<<<<<< HEAD
             "Composer\\Config::disableProcessTimeout",
             "npx concurrently -k \"php artisan dev:serve\" \"npm run dev\" \"php artisan queue:work\" \"php artisan schedule:work\" --names=server,vite,queue,schedule"
         ],
+=======
+    "Composer\\Config::disableProcessTimeout",
+    "npx concurrently -k \"php -S 10.2.14.89:8000 -t public\" \"npm run dev\" \"php artisan queue:work\" \"php artisan schedule:work\""
+],
+>>>>>>> 3d9fef9 (24112026 Update QCO preparation file management and preview)
         "test": [
             "@php artisan config:clear --ansi",
             "@php artisan test"

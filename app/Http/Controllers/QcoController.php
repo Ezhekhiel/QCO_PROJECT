@@ -345,4 +345,35 @@ class QcoController extends Controller
             'completion' => $jumlah_completion,
         ]);
     }
+
+    public function viewPreparationFile($id)
+    {
+        $fileRecord = qco___preparation_files::findOrFail($id);
+
+        $filename = basename($fileRecord->file);
+        $path = public_path('data_qco/' . $filename);
+
+        abort_unless(is_file($path), 404, 'File tidak ditemukan.');
+
+        $mimeType = File::mimeType($path) ?: 'application/octet-stream';
+
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . addslashes($filename) . '"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    public function downloadPreparationFile($id)
+    {
+        $fileRecord = qco___preparation_files::findOrFail($id);
+
+        $filename = basename($fileRecord->file);
+        $path = public_path('data_qco/' . $filename);
+
+        abort_unless(is_file($path), 404, 'File tidak ditemukan.');
+
+        return response()->download($path, $filename);
+    }
+
 }

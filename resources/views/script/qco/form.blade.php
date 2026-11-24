@@ -1,5 +1,4 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <!-- apexcharts -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.37.1/dist/apexcharts.min.js"
     integrity="sha256-+vh8GkaU7C9/wbSLIcwq82tQ2wTf44aOHA8HlBMwRI8=" crossorigin="anonymous"></script>
@@ -9,6 +8,10 @@
         listPreparation: @json($list),
     };
     let rowFilesMap = {};
+
+    let previewUrlsMap = {};
+
+    const preparationFileBaseUrl = @json(url('/QCO/preparation-file'));
 
     $(document).ready(function() {
         $('#input_cso').on('submit', function(e) {
@@ -181,6 +184,55 @@
                 rowFilesMap[index] = [];
                 let isAlreadySubmitted = submittedListIds.includes(value.id);
                 const matchedPrep = preparationsArray.find(prep => prep.id_list == value.id);
+
+                const savedFiles = matchedPrep?.preparation_file || [];
+
+                let savedFilesHtml = '';
+
+                if (savedFiles.length > 0) {
+                    savedFilesHtml = savedFiles.map(file => {
+                        const extension = (file.file || '').split('.').pop().toLowerCase();
+                        const isOfficeFile = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension);
+                        const viewButton = isOfficeFile
+                            ? ''
+                            : `<a href="${preparationFileBaseUrl}/${file.id}/view" target="_blank" rel="noopener"
+                                    class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">
+                                    <i class="fas fa-eye"></i> View
+                               </a>`;
+
+                        return `
+                            <li class="list-group-item py-2 d-flex justify-content-between align-items-center flex-wrap">
+                                <span class="small text-break">
+                                    <i class="fas fa-file-alt text-primary mr-1"></i>
+                                    ${$('<div>').text(file.file).html()}
+                                </span>
+
+                                <span class="mt-1">
+                                    ${viewButton}
+                                    <a href="${preparationFileBaseUrl}/${file.id}/download"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    onclick="event.stopPropagation()">
+                                        <i class="fas fa-download"></i> Download
+                                    </a>
+                                </span>
+                            </li>
+                        `;
+                    }).join('');
+                } else if (isAlreadySubmitted) {
+                    savedFilesHtml = `
+                        <li class="list-group-item py-1 small">
+                            <i class="fas fa-exclamation-circle"></i>
+                            File tidak ditemukan.
+                        </li>
+                    `;
+                } else {
+                    savedFilesHtml = `
+                        <li class="list-group-item py-1 small">
+                            Belum ada file dipilih
+                        </li>
+                    `;
+                }
+
                 const userName = matchedPrep?.user?.[0]?.name;
                 const labelText = userName ? `Di update oleh ${userName}` : 'Sudah Disimpan';
 
@@ -222,9 +274,7 @@
                                     </small>
 
                                     <ul class="list-group mt-2 preview-list-${index}">
-                                        <li class="list-group-item ${textColor} py-1 small bg-transparent border">
-                                            ${isAlreadySubmitted ? '<i class="fas fa-database"></i> Tersimpan di database' : 'Belum ada file dipilih'}
-                                        </li>
+                                        ${savedFilesHtml}
                                     </ul>
                                 </div>
                             </div>
@@ -259,37 +309,83 @@
         $(this).val('');
     });
 
+    
     function renderFileList(index) {
         let $previewList = $(`.preview-list-${index}`);
         $previewList.empty();
 
-        let files = rowFilesMap[index];
+        // Bersihkan URL preview sebelumnya agar tidak menumpuk.
+        if (previewUrlsMap[index]) {
+            previewUrlsMap[index].forEach(url => URL.revokeObjectURL(url));
+        }
+        previewUrlsMap[index] = [];
 
-        if (files.length === 0) {
-            $previewList.append('<li class="list-group-item text-muted py-1 small">Belum ada file dipilih</li>');
+        let files = rowFilesMap[index];
+        if (!files || files.length === 0) {
+            $previewList.append(
+                '<li class="list-group-item text-muted py-1 small">Belum ada file dipilih</li>'
+            );
             return;
         }
 
         files.forEach((file, fileIndex) => {
             let ext = file.name.split('.').pop().toLowerCase();
             let icon = '<i class="fas fa-file text-secondary mr-1"></i>';
-            if (['jpg', 'jpeg', 'png'].includes(ext)) icon =
-                '<i class="fas fa-file-image text-success mr-1"></i>';
-            else if (ext === 'pdf') icon = '<i class="fas fa-file-pdf text-danger mr-1"></i>';
-            else if (['xls', 'xlsx'].includes(ext)) icon =
-                '<i class="fas fa-file-excel text-primary mr-1"></i>';
+            let previewButton = '';
 
-            $previewList.append(`
-                <li class="list-group-item py-1 small d-flex justify-content-between align-items-center">
-                    <span>${icon} ${file.name}</span>
-                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 remove-file-item"
-                            data-row="${index}" data-fileindex="${fileIndex}" title="Hapus file">
-                        &times;
+            if (['jpg', 'jpeg', 'png'].includes(ext)) {
+                icon = '<i class="fas fa-file-image text-success mr-1"></i>';
+            } else if (ext === 'pdf') {
+                icon = '<i class="fas fa-file-pdf text-danger mr-1"></i>';
+            } else if (['xls', 'xlsx', 'csv'].includes(ext)) {
+                icon = '<i class="fas fa-file-excel text-success mr-1"></i>';
+            } else if (['doc', 'docx'].includes(ext)) {
+                icon = '<i class="fas fa-file-word text-primary mr-1"></i>';
+            } else if (['ppt', 'pptx'].includes(ext)) {
+                icon = '<i class="fas fa-file-powerpoint text-danger mr-1"></i>';
+            }
+
+            // PDF dan gambar dibuka langsung menggunakan browser.
+            if (['pdf', 'jpg', 'jpeg', 'png'].includes(ext)) {
+                const previewUrl = URL.createObjectURL(file);
+                previewUrlsMap[index].push(previewUrl);
+                previewButton = `
+                    <button type="button"
+                            class="btn btn-sm btn-outline-primary py-0 px-2 preview-file-item"
+                            data-preview-url="${previewUrl}"
+                            data-file-name="${$('<div>').text(file.name).html()}">
+                        <i class="fas fa-eye"></i> View
                     </button>
+                `;
+            } else if (['doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx'].includes(ext)) {
+                const downloadUrl = URL.createObjectURL(file);
+                previewUrlsMap[index].push(downloadUrl);
+                previewButton = `
+                    <a href="${downloadUrl}"
+                       download="${$('<div>').text(file.name).html()}"
+                       class="btn btn-sm btn-outline-secondary py-0 px-2">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                `;
+            }
+
+            let safeFileName = $('<div>').text(file.name).html();
+            $previewList.append(`
+                <li class="list-group-item py-2 small d-flex justify-content-between align-items-center flex-wrap">
+                    <span class="text-break mr-2">${icon} ${safeFileName}</span>
+                    <span class="mt-1">
+                        ${previewButton}
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger py-0 px-2 remove-file-item"
+                                data-row="${index}"
+                                data-fileindex="${fileIndex}"
+                                title="Hapus file">&times;</button>
+                    </span>
                 </li>
             `);
         });
     }
+
 
     function updateStatusList(id_list, id_qco) {
         Swal.fire({
@@ -340,4 +436,16 @@
         rowFilesMap[rowIndex].splice(fileIndex, 1);
         renderFileList(rowIndex);
     });
+
+    // Preview PDF dan gambar: buka file asli di tab baru.
+    $(document).on('click', '#preparation_list .preview-file-item', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const url = $(this).attr('data-preview-url');
+        if (url) {
+            window.open(url, '_blank', 'noopener');
+        }
+    });
+
+
 </script>

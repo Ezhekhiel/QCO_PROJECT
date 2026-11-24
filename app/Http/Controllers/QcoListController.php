@@ -9,18 +9,27 @@ use App\Models\qco___preparation_list;
 
 class QcoListController extends Controller
 {
-    public function index() {
-        $department = department::orderBy('nama')->get();
-        return view('qco.qco_list',['department'=>$department]);
-    }
-    public function main() {
-        $list = qco___preparation_list::with('department')->get();
+    public function index()
+    {
+        // Urutkan dropdown department berdasarkan ID database
+        $department = department::orderBy('id', 'asc')->get();
 
-         return response()->json([
-                'success' => true,
-                'data' => $list
-            ]);
+        return view('qco.qco_list', ['department' => $department]);
     }
+    public function main()
+    {
+        // Urutkan berdasarkan ID department,
+        // kemudian ID preparation list
+        $list = qco___preparation_list::with('department')
+            ->orderBy('department_id', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $list
+        ]);
+}
     public function store(Request $request) {
         // 1. Validasi input dari form
         $request->validate([

@@ -58,6 +58,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/QCO/Form/Preparation/Store', [QcoController::class, 'store_preparation'])->name('QCO.preparation.store');
     Route::delete('/QCO/Form/reset/{id_qco}/{id_list}', [QcoController::class, 'destroy'])->name('QCO.destroy');
 
+    Route::get('/QCO/preparation-file/{id}/view', [QcoController::class, 'viewPreparationFile'])->name('QCO.preparation.file.view');
+    Route::get('/QCO/preparation-file/{id}/download', [QcoController::class, 'downloadPreparationFile'])->name('QCO.preparation.file.download');
+
     Route::get('/QCO/List', [QcoListController::class, 'index']);
     Route::POST('/QCO/List', [QcoListController::class, 'store'])->name('QCO.import_list');
     Route::get('/QCO/List/main', [QcoListController::class, 'main'])->name('QCO.list.main');
