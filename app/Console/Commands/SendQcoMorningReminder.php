@@ -116,6 +116,7 @@ class SendQcoMorningReminder extends Command
                 $reminderMessages[] = "📌 *Model: {$modelName} ({$cellName})*";
                 $reminderMessages[] = "📅 *Jadwal QCO:* {$coDate->translatedFormat('d M Y')} ({$statusLabel})";
                 $reminderMessages[] = "Status QCO: {$qco->status} | Stage: {$qco->stage}";
+                $reminderMessages[] = "Description: {$qco->description}";
                 $reminderMessages[] = "Belum Melakukan Checklist Persiapan:";
                 $reminderMessages = array_merge($reminderMessages, $uniqueUncompletedItems);
             }

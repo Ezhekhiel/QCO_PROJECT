@@ -24,7 +24,7 @@ class QcoService {
             ->exists();
 
         if ($exist_qco) {
-            throw new \Exception('Data tersebut sudah ada!');
+            throw new \Exception('Data tersebut sudah ada di hari yang sama!');
         }
 
         $qco = null;

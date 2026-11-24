@@ -16,7 +16,12 @@
     $(document).ready(function() {
         $('#input_cso').on('submit', function(e) {
             e.preventDefault();
-
+            if ($('#description').val() == "-") {
+                Swal.fire('Gagal!', "Description harus di isi atau tidak boleh hanya '-'!" ||
+                    'Terjadi kesalahan.',
+                    'error');
+                return false;
+            }
             $.ajax({
                 url: "{{ route('qco.form.store') }}",
                 method: "POST",
@@ -192,10 +197,11 @@
                 if (savedFiles.length > 0) {
                     savedFilesHtml = savedFiles.map(file => {
                         const extension = (file.file || '').split('.').pop().toLowerCase();
-                        const isOfficeFile = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension);
-                        const viewButton = isOfficeFile
-                            ? ''
-                            : `<a href="${preparationFileBaseUrl}/${file.id}/view" target="_blank" rel="noopener"
+                        const isOfficeFile = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(
+                            extension);
+                        const viewButton = isOfficeFile ?
+                            '' :
+                            `<a href="${preparationFileBaseUrl}/${file.id}/view" target="_blank" rel="noopener"
                                     class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">
                                     <i class="fas fa-eye"></i> View
                                </a>`;
@@ -309,7 +315,7 @@
         $(this).val('');
     });
 
-    
+
     function renderFileList(index) {
         let $previewList = $(`.preview-list-${index}`);
         $previewList.empty();
@@ -446,6 +452,4 @@
             window.open(url, '_blank', 'noopener');
         }
     });
-
-
 </script>

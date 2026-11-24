@@ -1184,3 +1184,115 @@
             });
     }
 </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tbody = document.querySelector('#detail-content tbody');
+        if (!tbody) return;
+
+        const rows = Array.from(tbody.querySelectorAll('tr.qco-row'));
+        const toolbar = document.getElementById('qco-chain-toolbar');
+        const chainInfo = document.getElementById('qco-chain-info');
+        const clearBtn = document.getElementById('clear-qco-selection');
+
+        const rowById = new Map();
+        const childrenByParentId = new Map();
+
+        rows.forEach(row => {
+            const id = String(row.dataset.id);
+            const parentId = row.dataset.parentId ? String(row.dataset.parentId) : null;
+
+            rowById.set(id, row);
+
+            if (parentId) {
+                if (!childrenByParentId.has(parentId)) {
+                    childrenByParentId.set(parentId, []);
+                }
+                childrenByParentId.get(parentId).push(row);
+            }
+        });
+
+        let selectedId = null;
+
+        function getConnectedIds(startId) {
+            const visited = new Set();
+            const queue = [String(startId)];
+
+            while (queue.length > 0) {
+                const currentId = queue.shift();
+                if (visited.has(currentId)) continue;
+                visited.add(currentId);
+
+                const currentRow = rowById.get(currentId);
+                if (currentRow && currentRow.dataset.parentId) {
+                    const pId = String(currentRow.dataset.parentId);
+                    if (!visited.has(pId)) queue.push(pId);
+                }
+
+                const kids = childrenByParentId.get(currentId) || [];
+                kids.forEach(kidRow => {
+                    const kId = String(kidRow.dataset.id);
+                    if (!visited.has(kId)) queue.push(kId);
+                });
+            }
+
+            return visited;
+        }
+
+        function clearSelection() {
+            selectedId = null;
+            tbody.classList.remove('has-selection');
+            rows.forEach(r => r.classList.remove('is-focused', 'is-related'));
+            toolbar.style.setProperty('display', 'none', 'important');
+        }
+
+        function applySelection(targetId) {
+            if (!targetId || !rowById.has(String(targetId))) return;
+
+            const connected = getConnectedIds(targetId);
+            if (connected.size <= 1) {
+                clearSelection();
+                return;
+            }
+
+            selectedId = String(targetId);
+            tbody.classList.remove('has-selection');
+            rows.forEach(r => r.classList.remove('is-focused', 'is-related'));
+            tbody.classList.add('has-selection');
+
+            const chainItems = Array.from(connected)
+                .map(id => rowById.get(id))
+                .filter(Boolean)
+                .sort((a, b) => Number(a.dataset.id) - Number(b.dataset.id));
+
+            chainItems.forEach(r => {
+                if (String(r.dataset.id) === selectedId) {
+                    r.classList.add('is-focused');
+                } else {
+                    r.classList.add('is-related');
+                }
+            });
+
+            const chainText = chainItems
+                .map(r => `#${r.dataset.id} (${r.dataset.date} - ${r.dataset.status})`)
+                .join('  →  ');
+
+            chainInfo.innerHTML = `Rantai Jadwal Terhubung: ${chainText}`;
+            toolbar.style.setProperty('display', 'flex', 'important');
+        }
+
+        rows.forEach(row => {
+            const id = String(row.dataset.id);
+
+            row.addEventListener('click', () => {
+                if (selectedId === id) {
+                    clearSelection();
+                } else {
+                    applySelection(id);
+                }
+            });
+        });
+
+        clearBtn?.addEventListener('click', clearSelection);
+    });
+</script>

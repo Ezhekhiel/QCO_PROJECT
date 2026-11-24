@@ -13,7 +13,7 @@ class qco extends Model
    use HasFactory;
 
     protected $table = 'qco';
-    protected $fillable = ['nik', 'change_over_date', 'completion_date', 'cell', 'description','model', 'stage', 'completion', 'status'];
+    protected $fillable = ['nik', 'change_over_date', 'completion_date', 'cell', 'description','model', 'stage', 'completion', 'status','status_plan','parent_id'];
 
     // Relasi ke User berdasarkan NIK
     public function user(): BelongsTo

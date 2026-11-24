@@ -2,12 +2,47 @@
 
 @section('content')
     <style>
-        .card {
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 12px;
-            /* Membuat sudut card melengkung halus */
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            /* Bayangan halus */
+        .qco-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+        }
+
+        /* Baris yang sedang difokuskan / diklik (kuning) */
+        .qco-row.is-focused td {
+            background-color: #ffe69c !important;
+            border-top: 2px solid #e0a800;
+            border-bottom: 2px solid #e0a800;
+            color: #111827;
+        }
+
+        /* Baris lain yang berada dalam satu rantai parent_id / reschedule (biru muda) */
+        .qco-row.is-related td {
+            background-color: #cfe2ff !important;
+            border-top: 1px dashed #3b82f6;
+            border-bottom: 1px dashed #3b82f6;
+            color: #111827;
+        }
+
+        /* Baris yang TIDAK terpilih: abu-abu sedang (tidak terlalu gelap) */
+        tbody.has-selection .qco-row:not(.is-focused):not(.is-related) td {
+            background-color: #f4f4f4 !important;
+            /* abu-abu sedang */
+            color: #cfcfcf !important;
+            /* teks abu tua agar tetap terbaca */
+            border-color: #c8c8c8 !important;
+        }
+
+        /* Sedikit redamkan badge & ikon di baris abu-abu agar tidak mencolok */
+        tbody.has-selection .qco-row:not(.is-focused):not(.is-related) .badge,
+        tbody.has-selection .qco-row:not(.is-focused):not(.is-related) span,
+        tbody.has-selection .qco-row:not(.is-focused):not(.is-related) small {
+            opacity: 0.65;
+        }
+
+        .chain-badge {
+            font-size: 0.72rem;
+            display: inline-block;
+            margin-top: 3px;
         }
 
         /* Tampilan pilihan Validation */
@@ -397,11 +432,57 @@
                                                 @endforeach
                                             </tr>
                                         </thead>
+                                        <div class="mb-2 d-flex justify-content-between align-items-center"
+                                            id="qco-chain-toolbar" style="display: none !important;">
+                                            <div id="qco-chain-info" class="small text-primary fw-semibold"></div>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                id="clear-qco-selection">
+                                                Reset Pilihan
+                                            </button>
+                                        </div>
+
                                         <tbody>
+                                            @php
+                                                // Peta cepat untuk mengecek apakah parent_id ada di $qcoList yang tampil sekarang
+                                                $qcoById = $qcoList->keyBy('id');
+                                                // Cari ID mana saja yang menjadi parent dari baris lain
+                                                $parentIdsSet = $qcoList->pluck('parent_id')->filter()->flip();
+                                            @endphp
+
                                             @forelse($qcoList as $index => $qco)
-                                                <tr>
-                                                    <td>{{ $index + 1 }}</td>
-                                                    <td>{{ $qco->change_over_date }}</td>
+                                                @php
+                                                    $hasParent = !is_null($qco->parent_id);
+                                                    $isParentOfOthers = $parentIdsSet->has($qco->id);
+                                                    $parentExistsInView = $hasParent && $qcoById->has($qco->parent_id);
+                                                @endphp
+
+                                                <tr class="qco-row" data-id="{{ $qco->id }}"
+                                                    data-parent-id="{{ $qco->parent_id ?? '' }}"
+                                                    data-model="{{ $qco->model }}"
+                                                    data-date="{{ $qco->change_over_date }}"
+                                                    data-status="{{ $qco->status }}">
+
+                                                    <td>
+                                                        <div>{{ $index + 1 }}</div>
+                                                    </td>
+
+                                                    <td>
+                                                        <div>{{ $qco->change_over_date }}</div>
+                                                        @if ($hasParent)
+                                                            <span class="badge bg-info text-dark chain-badge"
+                                                                title="{{ $parentExistsInView ? 'Terhubung ke QCO #' . $qco->parent_id . ' (' . $qcoById[$qco->parent_id]->change_over_date . ')' : 'Parent QCO #' . $qco->parent_id . ' (di luar filter/bulan ini)' }}">
+                                                                ↳ Dari
+                                                                @if ($parentExistsInView)
+                                                                    ({{ $qcoById[$qco->parent_id]->change_over_date }})
+                                                                @endif
+                                                            </span>
+                                                        @elseif ($isParentOfOthers)
+                                                            <span class="badge bg-light text-dark border chain-badge">
+                                                                Awal Jadwal
+                                                            </span>
+                                                        @endif
+                                                    </td>
+
                                                     <td>{{ $qco->qco_status?->actual_change_over ?? 'NOT YET' }}</td>
                                                     <td><strong>{{ $qco->model }}</strong></td>
                                                     <td>
@@ -410,6 +491,7 @@
                                                             class="badge bg-secondary">{{ $qco->cell_info->area ?? 'Cell ' . $qco->cell }}</span>
                                                     </td>
                                                     <td>{{ $qco->stage }}</td>
+
                                                     @php
                                                         if ($qco->status == 'CANCEL') {
                                                             $colorBadge = 'danger';
@@ -423,6 +505,11 @@
                                                         <span class="badge bg-{{ $colorBadge }}">
                                                             {{ $qco->status }}
                                                         </span>
+                                                        @if (!empty($qco->status_plan) && $qco->status_plan !== 'plan')
+                                                            <div><small
+                                                                    class="text-muted fst-italic">{{ $qco->status_plan }}</small>
+                                                            </div>
+                                                        @endif
                                                     </td>
 
                                                     @foreach ($list as $prepMaster)
@@ -431,9 +518,6 @@
                                                                 'id_list',
                                                                 $prepMaster->id,
                                                             );
-                                                            $hasFile =
-                                                                $matchedPrep &&
-                                                                $matchedPrep->preparation_file->count() > 0;
                                                         @endphp
                                                         <td>
                                                             @if ($matchedPrep)
@@ -447,7 +531,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="{{ 6 + count($list) }}" class="text-center">
+                                                    <td colspan="{{ 7 + count($list) }}" class="text-center">
                                                         Tidak ada data Change Over pada periode ini.
                                                     </td>
                                                 </tr>
