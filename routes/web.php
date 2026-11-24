@@ -1,7 +1,8 @@
 <?php
 
-use App\Http\Controllers\PlanMasterController;
 use App\Http\Controllers\CellInfoController;
+use App\Http\Controllers\folder_test\testController;
+use App\Http\Controllers\PlanMasterController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QcoController;
 use App\Http\Controllers\qcoDashboardController;
@@ -73,6 +74,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/whatsapp/management', [WhatsappController::class, 'index'])->name('whatsapp.index');
     Route::get('/whatsapp/sync', [WhatsappController::class, 'syncGroups'])->name('whatsapp.sync');
+
+    Route::get('/test', [testController::class, 'test']);
+
 });
 
 

@@ -1103,3 +1103,124 @@
             });
     }
 </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tbody = document.querySelector('#detail-content tbody');
+        if (!tbody) return;
+
+        const rows = Array.from(tbody.querySelectorAll('tr.qco-row'));
+        const toolbar = document.getElementById('qco-chain-toolbar');
+        const chainInfo = document.getElementById('qco-chain-info');
+        const clearBtn = document.getElementById('clear-qco-selection');
+
+        // Bangun map id -> row dan parentId -> [childRows]
+        const rowById = new Map();
+        const childrenByParentId = new Map();
+
+        rows.forEach(row => {
+            const id = String(row.dataset.id);
+            const parentId = row.dataset.parentId ? String(row.dataset.parentId) : null;
+
+            rowById.set(id, row);
+
+            if (parentId) {
+                if (!childrenByParentId.has(parentId)) {
+                    childrenByParentId.set(parentId, []);
+                }
+                childrenByParentId.get(parentId).push(row);
+            }
+        });
+
+        let lockedId = null; // Menyimpan ID jika user mengklik baris (kunci highlight)
+
+        // Mengambil semua ID yang terhubung (ke atas ke parent, ke bawah ke reschedule/child)
+        function getConnectedIds(startId) {
+            const visited = new Set();
+            const queue = [String(startId)];
+
+            while (queue.length > 0) {
+                const currentId = queue.shift();
+                if (visited.has(currentId)) continue;
+                visited.add(currentId);
+
+                const currentRow = rowById.get(currentId);
+                if (currentRow && currentRow.dataset.parentId) {
+                    const pId = String(currentRow.dataset.parentId);
+                    if (!visited.has(pId)) queue.push(pId);
+                }
+
+                const kids = childrenByParentId.get(currentId) || [];
+                kids.forEach(kidRow => {
+                    const kId = String(kidRow.dataset.id);
+                    if (!visited.has(kId)) queue.push(kId);
+                });
+            }
+
+            return visited;
+        }
+
+        function applyHighlight(targetId) {
+            clearHighlight(false);
+            if (!targetId || !rowById.has(String(targetId))) return;
+
+            const connected = getConnectedIds(targetId);
+            if (connected.size <= 1) return; // Tidak punya relasi parent/child di tabel ini
+
+            tbody.classList.add('has-selection');
+
+            // Urutkan rantai berdasarkan tanggal / ID agar enak dibaca
+            const chainItems = Array.from(connected)
+                .map(id => rowById.get(id))
+                .filter(Boolean)
+                .sort((a, b) => Number(a.dataset.id) - Number(b.dataset.id));
+
+            chainItems.forEach(r => {
+                if (String(r.dataset.id) === String(targetId)) {
+                    r.classList.add('is-focused');
+                } else {
+                    r.classList.add('is-related');
+                }
+            });
+
+            const chainText = chainItems
+                .map(r => `(${r.dataset.date} - ${r.dataset.status})`)
+                .join('  →  ');
+
+            chainInfo.innerHTML = `Rantai Jadwal Terhubung: ${chainText}`;
+            toolbar.style.setProperty('display', 'flex', 'important');
+        }
+
+        function clearHighlight(resetLock = true) {
+            if (resetLock) lockedId = null;
+            tbody.classList.remove('has-selection');
+            rows.forEach(r => r.classList.remove('is-focused', 'is-related'));
+            if (!lockedId) {
+                toolbar.style.setProperty('display', 'none', 'important');
+            }
+        }
+
+        rows.forEach(row => {
+            const id = String(row.dataset.id);
+
+            row.addEventListener('mouseenter', () => {
+                if (!lockedId) applyHighlight(id);
+            });
+
+            row.addEventListener('mouseleave', () => {
+                if (!lockedId) clearHighlight(false);
+            });
+
+            row.addEventListener('click', () => {
+                if (lockedId === id) {
+                    clearHighlight(true);
+                } else {
+                    lockedId = id;
+                    applyHighlight(id);
+                }
+            });
+        });
+
+        clearBtn?.addEventListener('click', () => clearHighlight(true));
+    });
+</script>
