@@ -123,13 +123,13 @@ class QcoController extends Controller
             'items' => 'required|array',
             // Ubah 'nullable' menjadi 'required' dan pastikan berupa array dengan minimal 1 file
             'items.*.files' => 'required|array|min:1',
-            'items.*.files.*' => 'required|mimes:jpg,jpeg,png,pdf,xls,xlsx|max:5120',
+            'items.*.files.*' => 'required|mimes:jpg,jpeg,png,pdf,xls,xlsx|max:10240',
         ], [
             // Custom pesan error agar lebih mudah dibaca (opsional)
             'items.*.files.required' => 'Setiap item yang dipilih wajib melampirkan file.',
             'items.*.files.min' => 'Setiap item yang dipilih minimal harus memiliki 1 file lampiran.',
             'items.*.files.*.mimes' => 'Format file tidak valid (diizinkan: jpg, jpeg, png, pdf, xls, xlsx).',
-            'items.*.files.*.max' => 'Ukuran file maksimal adalah 5MB.',
+            'items.*.files.*.max' => 'Ukuran file maksimal adalah 10MB per file.',
         ]);
 
         $idQco = $request->id_qco;

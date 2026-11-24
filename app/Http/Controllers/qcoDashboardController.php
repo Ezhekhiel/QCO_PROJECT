@@ -126,14 +126,15 @@ class qcoDashboardController extends Controller
 
         // 4. Map data preparations yang sudah dipilih
         $mappedPreparations = $qcoRecord->preparations->map(function ($item) {
-            return [
-                'id'               => $item->id,
-                'id_list'          => $item->id_list,
-                'validation'       => $item->validation,
-                'list'             => $item->preparation_list->list ?? null,
-                'department'       => $item->preparation_list->department->nama ?? 'Lainnya',
-                'preparation_file' => $item->preparation_file
-            ];
+        return [
+            'id'                  => $item->id,
+            'id_list'             => $item->id_list,
+            'validation'          => $item->validation,
+            'validation_remarks'  => $item->validation_remarks,
+            'list'                => $item->preparation_list->list ?? null,
+            'department'          => $item->preparation_list->department->nama ?? 'Lainnya',
+            'preparation_file'    => $item->preparation_file
+        ];
         })->groupBy('department');
 
         // 5. Gabungkan dan hitung persentase per departemen (hanya untuk departemen yang lolos filter)
@@ -180,17 +181,43 @@ class qcoDashboardController extends Controller
     }
     public function updateValidation(Request $request, $id)
     {
+        // Hanya department PRODUCTION yang boleh update validation.
+        $user = Auth::user();
+        $user->load('department');
+
+        if (!$user->department || $user->department->nama !== 'PRODUCTION') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya department PRODUCTION yang bisa update status validation.'
+            ], 403);
+        }
+        $validated = $request->validate([
+            'validation' => 'required|integer|in:0,1,2',
+            'validation_remarks' => 'nullable|string|required_if:validation,2|max:2000',
+        ], [
+            'validation.required' => 'Status validation wajib dipilih.',
+            'validation.in' => 'Status validation tidak valid.',
+            'validation_remarks.required_if' => 'Remarks wajib diisi jika memilih Not Match.',
+            'validation_remarks.max' => 'Remarks maksimal 2000 karakter.',
+        ]);
+
         $preparation = qco___preparation::find($id);
 
         if (!$preparation) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ditemukan'
+                'message' => 'Data tidak ditemukan.'
             ], 404);
         }
 
-        // Update status validation berdasarkan input request (0 atau 1 / true atau false)
-        $preparation->validation = filter_var($request->validation, FILTER_VALIDATE_BOOLEAN);
+        $preparation->validation = (int) $validated['validation'];
+
+        // Remarks hanya disimpan jika status Not Match.
+        $preparation->validation_remarks =
+            $validated['validation'] == 2
+                ? trim($validated['validation_remarks'])
+                : null;
+
         $preparation->save();
 
         return response()->json([

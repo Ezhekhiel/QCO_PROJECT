@@ -13,7 +13,13 @@ class qco___preparation extends Model
     use HasFactory;
 
     protected $table = 'qco___preparation'; // Sesuaikan dengan nama tabel di database
-    protected $fillable = ['id_qco', 'id_list','user_update'];
+    protected $fillable = [
+        'id_qco',
+        'id_list',
+        'user_update',
+        'validation',
+        'validation_remarks',
+    ];
 
     /**
      * The "booted" method of the model.
