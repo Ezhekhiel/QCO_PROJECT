@@ -1114,7 +1114,6 @@
         const chainInfo = document.getElementById('qco-chain-info');
         const clearBtn = document.getElementById('clear-qco-selection');
 
-        // Bangun map id -> row dan parentId -> [childRows]
         const rowById = new Map();
         const childrenByParentId = new Map();
 
@@ -1132,9 +1131,8 @@
             }
         });
 
-        let lockedId = null; // Menyimpan ID jika user mengklik baris (kunci highlight)
+        let selectedId = null;
 
-        // Mengambil semua ID yang terhubung (ke atas ke parent, ke bawah ke reschedule/child)
         function getConnectedIds(startId) {
             const visited = new Set();
             const queue = [String(startId)];
@@ -1160,23 +1158,34 @@
             return visited;
         }
 
-        function applyHighlight(targetId) {
-            clearHighlight(false);
+        function clearSelection() {
+            selectedId = null;
+            tbody.classList.remove('has-selection');
+            rows.forEach(r => r.classList.remove('is-focused', 'is-related'));
+            toolbar.style.setProperty('display', 'none', 'important');
+        }
+
+        function applySelection(targetId) {
             if (!targetId || !rowById.has(String(targetId))) return;
 
             const connected = getConnectedIds(targetId);
-            if (connected.size <= 1) return; // Tidak punya relasi parent/child di tabel ini
+            if (connected.size <= 1) {
+                clearSelection();
+                return;
+            }
 
+            selectedId = String(targetId);
+            tbody.classList.remove('has-selection');
+            rows.forEach(r => r.classList.remove('is-focused', 'is-related'));
             tbody.classList.add('has-selection');
 
-            // Urutkan rantai berdasarkan tanggal / ID agar enak dibaca
             const chainItems = Array.from(connected)
                 .map(id => rowById.get(id))
                 .filter(Boolean)
                 .sort((a, b) => Number(a.dataset.id) - Number(b.dataset.id));
 
             chainItems.forEach(r => {
-                if (String(r.dataset.id) === String(targetId)) {
+                if (String(r.dataset.id) === selectedId) {
                     r.classList.add('is-focused');
                 } else {
                     r.classList.add('is-related');
@@ -1184,43 +1193,25 @@
             });
 
             const chainText = chainItems
-                .map(r => `(${r.dataset.date} - ${r.dataset.status})`)
+                .map(r => `#${r.dataset.id} (${r.dataset.date} - ${r.dataset.status})`)
                 .join('  →  ');
 
             chainInfo.innerHTML = `Rantai Jadwal Terhubung: ${chainText}`;
             toolbar.style.setProperty('display', 'flex', 'important');
         }
 
-        function clearHighlight(resetLock = true) {
-            if (resetLock) lockedId = null;
-            tbody.classList.remove('has-selection');
-            rows.forEach(r => r.classList.remove('is-focused', 'is-related'));
-            if (!lockedId) {
-                toolbar.style.setProperty('display', 'none', 'important');
-            }
-        }
-
         rows.forEach(row => {
             const id = String(row.dataset.id);
 
-            row.addEventListener('mouseenter', () => {
-                if (!lockedId) applyHighlight(id);
-            });
-
-            row.addEventListener('mouseleave', () => {
-                if (!lockedId) clearHighlight(false);
-            });
-
             row.addEventListener('click', () => {
-                if (lockedId === id) {
-                    clearHighlight(true);
+                if (selectedId === id) {
+                    clearSelection();
                 } else {
-                    lockedId = id;
-                    applyHighlight(id);
+                    applySelection(id);
                 }
             });
         });
 
-        clearBtn?.addEventListener('click', () => clearHighlight(true));
+        clearBtn?.addEventListener('click', clearSelection);
     });
 </script>

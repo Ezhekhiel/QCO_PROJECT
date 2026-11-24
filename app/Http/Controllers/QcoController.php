@@ -138,55 +138,68 @@ class QcoController extends Controller
         DB::beginTransaction();
 
         try {
+            $processedIdLists = [];
+            $skippedIdLists = [];
+
             if ($request->has('items')) {
                 foreach ($request->items as $item) {
-                    if (isset($item['id_list'])) {
-                        $idList = $item['id_list'];
+                    if (!isset($item['id_list'])) {
+                        continue;
+                    }
 
-                        // 1. Simpan ke tabel qco___preparation
-                        $preparation = qco___preparation::create([
-                            'id_qco' => $idQco,
-                            'id_list' => $idList,
-                        ]);
+                    $idList = $item['id_list'];
 
-                        // Validasi apakah baris preparation berhasil dibuat
-                        if (!$preparation) {
-                            throw new \Exception('Gagal menyimpan data preparation untuk ID list: ' . $idList);
+                    // Lewati jika id_list sudah diproses di request ini atau sudah ada di DB untuk id_qco ini
+                    $alreadyInRequest = in_array($idList, $processedIdLists, true);
+                    $alreadyInDb = qco___preparation::where('id_qco', $idQco)
+                        ->where('id_list', $idList)
+                        ->exists();
+
+                    if ($alreadyInRequest || $alreadyInDb) {
+                        if (!in_array($idList, $skippedIdLists, true)) {
+                            $skippedIdLists[] = $idList;
                         }
+                        continue;
+                    }
 
-                        // 2. Cek apakah ada file yang di-upload (karena sudah di-validate required, ini pasti ada)
-                        if (isset($item['files']) && is_array($item['files'])) {
-                            foreach ($item['files'] as $file) {
+                    $processedIdLists[] = $idList;
 
+                    // 1. Simpan ke tabel qco___preparation
+                    $preparation = qco___preparation::create([
+                        'id_qco' => $idQco,
+                        'id_list' => $idList,
+                    ]);
+
+                    if (!$preparation) {
+                        throw new \Exception('Gagal menyimpan data preparation untuk ID list: ' . $idList);
+                    }
+
+                    // 2. Simpan file hanya untuk item yang baru dibuat
+                    if (isset($item['files']) && is_array($item['files'])) {
+                        foreach ($item['files'] as $file) {
                             $originalName = basename($file->getClientOriginalName());
-
                             $nameWithoutExt = pathinfo($originalName, PATHINFO_FILENAME);
                             $extension = $file->getClientOriginalExtension();
 
                             $filename = $originalName;
                             $counter = 1;
 
-                            // Jika nama file sudah ada, tambahkan nomor agar tidak tertimpa
                             while (file_exists(public_path('data_qco/' . $filename))) {
                                 $filename = $nameWithoutExt . ' (' . $counter . ').' . $extension;
                                 $counter++;
                             }
 
+                            if (!$file->move(public_path('data_qco'), $filename)) {
+                                throw new \Exception('Gagal mengunggah file fisik ke server.');
+                            }
 
-                                // Pindahkan file fisik
-                                if (!$file->move(public_path('data_qco'), $filename)) {
-                                    throw new \Exception('Gagal mengunggah file fisik ke server.');
-                                }
+                            $fileRecord = qco___preparation_files::create([
+                                'preparation_id' => $preparation->id,
+                                'file' => $filename
+                            ]);
 
-                                // Simpan ke tabel file
-                                $fileRecord = qco___preparation_files::create([
-                                    'preparation_id' => $preparation->id,
-                                    'file' => $filename
-                                ]);
-
-                                if (!$fileRecord) {
-                                    throw new \Exception('Gagal mencatat file ke database.');
-                                }
+                            if (!$fileRecord) {
+                                throw new \Exception('Gagal mencatat file ke database.');
                             }
                         }
                     }
@@ -195,6 +208,7 @@ class QcoController extends Controller
 
             $stage = qco::where('id', $idQco)->value('stage');
             if (!$stage) {
+                throw new \Exception('QCO tidak terdaftar!');
                 return response()->json([
                     'success' => false,
                     'message' => 'QCO tidak terdaftar!'
@@ -224,12 +238,16 @@ class QcoController extends Controller
             }
 
             DB::commit();
+            $message = 'Data preparation berhasil disimpan dan status diperbarui!';
+            if (!empty($skippedIdLists)) {
+                $message .= ' Beberapa item/file tidak disimpan karena sudah ada sebelumnya (ID list: ' . implode(', ', $skippedIdLists) . ').';
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Data preparation berhasil disimpan dan status diperbarui!'
+                'message' => $message,
+                'skipped_id_lists' => $skippedIdLists,
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error store_preparation: ' . $e->getMessage());

@@ -69,7 +69,7 @@ class qcoDashboardController extends Controller
             });
         }
 
-        $list = qco___preparation_list::with('department')->get();
+        $list = qco___preparation_list::with('department')->orderBy('department_id')->get();
 
         $selectedIds = $qcoList->flatMap(function ($qco) {
             return $qco->preparations;
@@ -85,7 +85,6 @@ class qcoDashboardController extends Controller
         $cell = cell_info::get();
 
         $planMaster = PlanMaster::whereBetween('stitching_start_date', [$start, $end])->get();
-
         return view('qco.index', compact('qcoList', 'currentMonth', 'cell', 'list', 'planMaster'));
     }
     public function dataModal(Request $request)

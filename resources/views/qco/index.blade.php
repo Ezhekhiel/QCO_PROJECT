@@ -7,7 +7,7 @@
             transition: background-color 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
         }
 
-        /* Baris yang sedang difokuskan / diklik */
+        /* Baris yang sedang difokuskan / diklik (kuning) */
         .qco-row.is-focused td {
             background-color: #ffe69c !important;
             border-top: 2px solid #e0a800;
@@ -15,7 +15,7 @@
             color: #111827;
         }
 
-        /* Baris lain yang berada dalam satu rantai parent_id / reschedule */
+        /* Baris lain yang berada dalam satu rantai parent_id / reschedule (biru muda) */
         .qco-row.is-related td {
             background-color: #cfe2ff !important;
             border-top: 1px dashed #3b82f6;
@@ -23,20 +23,20 @@
             color: #111827;
         }
 
-        /* Baris yang TIDAK terpilih dibuat jauh lebih gelap agar tidak memecah fokus */
+        /* Baris yang TIDAK terpilih: abu-abu sedang (tidak terlalu gelap) */
         tbody.has-selection .qco-row:not(.is-focused):not(.is-related) td {
-            background-color: #374151 !important;
-            /* abu-abu gelap */
-            color: #9ca3af !important;
-            /* teks abu-abu redup */
-            border-color: #4b5563 !important;
+            background-color: #f4f4f4 !important;
+            /* abu-abu sedang */
+            color: #cfcfcf !important;
+            /* teks abu tua agar tetap terbaca */
+            border-color: #c8c8c8 !important;
         }
 
-        /* Redupkan badge & ikon di baris yang gelap agar ikut menyatu */
+        /* Sedikit redamkan badge & ikon di baris abu-abu agar tidak mencolok */
         tbody.has-selection .qco-row:not(.is-focused):not(.is-related) .badge,
         tbody.has-selection .qco-row:not(.is-focused):not(.is-related) span,
         tbody.has-selection .qco-row:not(.is-focused):not(.is-related) small {
-            opacity: 0.45;
+            opacity: 0.65;
         }
 
         .chain-badge {
