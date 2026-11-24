@@ -2,34 +2,41 @@
 
 @section('content')
     <style>
-        .card {
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 12px;
-            /* Membuat sudut card melengkung halus */
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            /* Bayangan halus */
-        }
-
         .qco-row {
             cursor: pointer;
-            transition: background-color 0.2s ease, opacity 0.2s ease;
+            transition: background-color 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
         }
 
-        /* Highlight baris yang sedang aktif / terhubung */
-        .qco-row.is-focused {
-            background-color: #fff3cd !important;
-            /* kuning lembut */
-            outline: 2px solid #ffc107;
+        /* Baris yang sedang difokuskan / diklik */
+        .qco-row.is-focused td {
+            background-color: #ffe69c !important;
+            border-top: 2px solid #e0a800;
+            border-bottom: 2px solid #e0a800;
+            color: #111827;
         }
 
-        .qco-row.is-related {
-            background-color: #e7f1ff !important;
-            /* biru muda untuk parent / reschedule terkait */
+        /* Baris lain yang berada dalam satu rantai parent_id / reschedule */
+        .qco-row.is-related td {
+            background-color: #cfe2ff !important;
+            border-top: 1px dashed #3b82f6;
+            border-bottom: 1px dashed #3b82f6;
+            color: #111827;
         }
 
-        /* Redupkan baris yang tidak terkait saat ada rantai yang dipilih */
-        tbody.has-selection .qco-row:not(.is-focused):not(.is-related) {
-            opacity: 0.35;
+        /* Baris yang TIDAK terpilih dibuat jauh lebih gelap agar tidak memecah fokus */
+        tbody.has-selection .qco-row:not(.is-focused):not(.is-related) td {
+            background-color: #374151 !important;
+            /* abu-abu gelap */
+            color: #9ca3af !important;
+            /* teks abu-abu redup */
+            border-color: #4b5563 !important;
+        }
+
+        /* Redupkan badge & ikon di baris yang gelap agar ikut menyatu */
+        tbody.has-selection .qco-row:not(.is-focused):not(.is-related) .badge,
+        tbody.has-selection .qco-row:not(.is-focused):not(.is-related) span,
+        tbody.has-selection .qco-row:not(.is-focused):not(.is-related) small {
+            opacity: 0.45;
         }
 
         .chain-badge {
