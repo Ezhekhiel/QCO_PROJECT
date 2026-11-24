@@ -45,9 +45,9 @@
             "npm run build"
         ],
         "dev": [
-    "Composer\\Config::disableProcessTimeout",
-    "npx concurrently -k \"php -S 10.2.14.175:6060 -t public\" \"npm run dev\" \"php artisan queue:work\" \"php artisan schedule:work\""
-],
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -k \"php artisan dev:serve\" \"npm run dev\" \"php artisan queue:work\" \"php artisan schedule:work\" --names=server,vite,queue,schedule"
+        ],
         "test": [
             "@php artisan config:clear --ansi",
             "@php artisan test"
