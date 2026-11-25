@@ -157,6 +157,30 @@
                 }
             });
         });
+
+        $('#no_preparation').on('change', function() {
+            const $checkbox = $(this);
+
+            // Konfirmasi hanya saat mencentang (bukan saat uncheck)
+            if (!$checkbox.is(':checked')) return;
+
+            // Batalkan centang sementara sampai user konfirmasi
+            $checkbox.prop('checked', false);
+
+            Swal.fire({
+                title: 'Yakin tidak perlu preparation?',
+                text: 'Proses preparation akan dilewati untuk data Change Over ini.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, tidak perlu',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $checkbox.prop('checked', true).trigger('change.confirmed');
+                }
+            });
+        });
     });
 
     function openModalQCO(id) {

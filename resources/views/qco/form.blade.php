@@ -67,6 +67,18 @@
                                     </div>
 
                                     <div class="mb-3">
+                                        <label for="change_over_date" class="form-label">Plan CO</label>
+                                        <select name="plan" id="plan_id"
+                                            class="form-control  @error('change_over_date') @enderror" required>
+                                            <option value="plan">PLAN</option>
+                                            <option value="unplan">UNPLAN</option>
+                                        </select>
+                                        @error('change_over_date')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    <div class="mb-3">
                                         <label for="change_over_date" class="form-label">Change Over Date</label>
                                         <input type="date"
                                             class="form-control @error('change_over_date') is-invalid @enderror"
@@ -121,6 +133,20 @@
                                         @error('description')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input @error('no_preparation') is-invalid @enderror"
+                                                type="checkbox" id="no_preparation" name="no_preparation" value="1"
+                                                {{ old('no_preparation') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="no_preparation">
+                                                Tidak perlu preparation
+                                            </label>
+                                            @error('no_preparation')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="card-footer">

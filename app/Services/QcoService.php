@@ -6,8 +6,10 @@ use App\Models\qco;
 use App\Models\qco___status;
 use App\Models\qco___preparation;
 use App\Models\qco___preparation_files;
+use App\Models\qco___preparation_list;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class QcoService {
     protected $whatsappService;
@@ -18,6 +20,9 @@ class QcoService {
 
     public function createQco(array $data)
     {
+        $noPreparation = filter_var($data['no_preparation'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        unset($data['no_preparation']);
+
         // Cek data eksis (sesuaikan jika perlu per cell/area)
         $exist_qco = qco::where('change_over_date', $data['change_over_date'])
             ->where('model', $data['model'])
@@ -29,7 +34,7 @@ class QcoService {
 
         $qco = null;
 
-        DB::transaction(function () use ($data, &$qco) {
+        DB::transaction(function () use ($data, $noPreparation, &$qco) {
             $qco = qco::create($data);
 
             qco___status::firstOrCreate([
@@ -56,6 +61,11 @@ class QcoService {
                         ]);
                     }
                 }
+            }else{
+                if ($noPreparation == true) {
+                    $data['stage'] == "Mass Production";
+
+                }
             }
         });
 
@@ -81,17 +91,24 @@ class QcoService {
 
             $text_update = "\n🔄 *Perubahan dari Model:* {$model_lama} (Semula tgl: {$tglLamaFormatted})";
         }
+        $status_plan = $data['status_plan'] ?? '';
+        $text_status = Str::upper((string) $status_plan);
 
-        // Header pesan dinamis
-        $headerMessage = "📢 *JADWAL QCO BARU DIBUAT* 📢";
-        if (($data['status_plan'] ?? null) === 'rescheduled') {
-            $headerMessage = "⚠️ *JADWAL QCO DI-RESCHEDULE UNTUK " . strtoupper($ketTanggal) . "* ⚠️";
+        if ($status_plan === 'rescheduled') {
+            $tanggalKapital = Str::upper((string) ($ketTanggal ?? ''));
+            $headerMessage = "⚠️ *JADWAL QCO DI-RESCHEDULE UNTUK " . $tanggalKapital . "* ⚠️";
+        } else {
+            $suffix = $text_status !== '' ? " (" . $text_status . ")" : "";
+            $headerMessage = "📢 *JADWAL QCO BARU DIBUAT" . $suffix . "* 📢";
         }
 
         $area = $qco->cell_info?->area ?? '-';
         $waktuInfo = $targetDate->equalTo($today) || $targetDate->equalTo($today->copy()->addDay())
             ? " ({$ketTanggal})"
             : '';
+        $prepNote = $noPreparation
+                    ? "Tidak perlu ada preparation apapun"
+                    : "Mohon segera lakukan persiapan checklist yang dibutuhkan.";
 
         $message = $headerMessage . "\n\n" .
             "*Model:* {$qco->model}\n" .
@@ -99,7 +116,7 @@ class QcoService {
             "*Tanggal CO:* {$coDate}{$waktuInfo}\n" .
             "*Stage:* {$qco->stage}\n" .
             "*Description:* {$qco->description}\n" .
-            "Mohon segera lakukan persiapan checklist yang dibutuhkan. Terima kasih! 🙏" .
+            "{$prepNote} Terima kasih! 🙏" .
             $text_update;
 
         try {

@@ -92,7 +92,8 @@ class QcoController extends Controller
         //
     }
 
-    public function store(Request $request, QcoService $qcoService) {
+    public function store(Request $request, QcoService $qcoService)
+    {
         $request->validate([
             'nik' => 'required',
             'change_over_date' => 'required|date',
@@ -100,16 +101,28 @@ class QcoController extends Controller
             'cell' => 'required|integer',
             'stage' => 'required|string',
             'description' => 'required|string',
+            'no_preparation' => 'nullable|boolean',
         ]);
 
+        $data = array_merge($request->all(), [
+            'no_preparation' => $request->boolean('no_preparation'),
+        ]);
+        $noPreparation = $request->no_preparation;
+        if ($noPreparation == true) {
+            $kecuali_departement = $data['stage'] == "Mass Production"?"DEVELOPMENT":"PE";
+        }
+        $list = qco___preparation_list::with('department')->get();
+        return $list;
+
         try {
-            $qcoService->createQco($request->all());
+            // Pakai $data, bukan $request->all()
+            $qcoService->createQco($data);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Data QCO berhasil disimpan dan notifikasi terkirim!'
             ]);
         } catch (\Exception $e) {
-            // Ubah dari return back() menjadi JSON response untuk Ajax
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
