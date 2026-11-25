@@ -111,7 +111,6 @@ class QcoController extends Controller
         try {
             // Pakai $data, bukan $request->all()
             $qco = $qcoService->createQco($data);
-            return $qco;
             return response()->json([
                 'success' => true,
                 'message' => 'Data QCO berhasil disimpan dan notifikasi terkirim!'
