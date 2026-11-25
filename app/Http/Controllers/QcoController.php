@@ -102,22 +102,16 @@ class QcoController extends Controller
             'stage' => 'required|string',
             'description' => 'required|string',
             'no_preparation' => 'nullable|boolean',
+            'status_plan' => 'nullable|string',
         ]);
-
         $data = array_merge($request->all(), [
             'no_preparation' => $request->boolean('no_preparation'),
         ]);
-        $noPreparation = $request->no_preparation;
-        if ($noPreparation == true) {
-            $kecuali_departement = $data['stage'] == "Mass Production"?"DEVELOPMENT":"PE";
-        }
-        $list = qco___preparation_list::with('department')->get();
-        return $list;
 
         try {
             // Pakai $data, bukan $request->all()
-            $qcoService->createQco($data);
-
+            $qco = $qcoService->createQco($data);
+            return $qco;
             return response()->json([
                 'success' => true,
                 'message' => 'Data QCO berhasil disimpan dan notifikasi terkirim!'

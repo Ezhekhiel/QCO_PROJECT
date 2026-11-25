@@ -68,7 +68,7 @@
 
                                     <div class="mb-3">
                                         <label for="change_over_date" class="form-label">Plan CO</label>
-                                        <select name="plan" id="plan_id"
+                                        <select name="status_plan" id="status_plan"
                                             class="form-control  @error('change_over_date') @enderror" required>
                                             <option value="plan">PLAN</option>
                                             <option value="unplan">UNPLAN</option>
@@ -117,8 +117,6 @@
                                         <label for="stage" class="form-label">Stage</label>
                                         <select name="stage" id="stage"
                                             class="form-control @error('stage') is-invalid @enderror">
-                                            <option value="">Select Stage</option>
-                                            <option value="Production Trial">Production Trial</option>
                                             <option value="Mass Production">Mass Production</option>
                                         </select>
                                         @error('stage')

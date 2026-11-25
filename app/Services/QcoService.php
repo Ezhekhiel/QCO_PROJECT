@@ -63,7 +63,17 @@ class QcoService {
                 }
             }else{
                 if ($noPreparation == true) {
-                    $data['stage'] == "Mass Production";
+                    //update completion dan completion_date
+                    qco::where('id',$qco->id)->update(['completion'=>100,'completion_date'=>date('Y-m-d H:i:s')]);
+                    $kecuali_departement = $data['stage'] == "Mass Production"?"DEVELOPMENT":"PE";
+                    $list = qco___preparation_list::with('department')
+                            ->whereDoesntHave('department', function ($query) use ($kecuali_departement) {
+                                $query->where('nama', $kecuali_departement);
+                            })
+                            ->get();
+                    foreach ($list as $key => $a) {
+                        $preparation = qco___preparation::create(['id_qco'=>$qco->id,'id_list'=>$a->id]);
+                    }
 
                 }
             }
@@ -99,7 +109,7 @@ class QcoService {
             $headerMessage = "⚠️ *JADWAL QCO DI-RESCHEDULE UNTUK " . $tanggalKapital . "* ⚠️";
         } else {
             $suffix = $text_status !== '' ? " (" . $text_status . ")" : "";
-            $headerMessage = "📢 *JADWAL QCO BARU DIBUAT" . $suffix . "* 📢";
+            $headerMessage = "📢 *JADWAL ".$text_status." CHANGE OVER BARU DIBUAT" . $suffix . "* 📢";
         }
 
         $area = $qco->cell_info?->area ?? '-';
@@ -107,8 +117,8 @@ class QcoService {
             ? " ({$ketTanggal})"
             : '';
         $prepNote = $noPreparation
-                    ? "Tidak perlu ada preparation apapun"
-                    : "Mohon segera lakukan persiapan checklist yang dibutuhkan.";
+                    ? "*Tidak perlu ada preparation apapun*"
+                    : "*Mohon segera lakukan persiapan checklist yang dibutuhkan.*";
 
         $message = $headerMessage . "\n\n" .
             "*Model:* {$qco->model}\n" .
@@ -125,7 +135,7 @@ class QcoService {
             report($e);
         }
 
-        return $qco;
+        return $message;
     }
     public function messageCancel(array $data) {
         // Format tanggal jika ingin rapi seperti contoh sebelumnya (opsional)
