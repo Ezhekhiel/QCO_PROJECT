@@ -44,6 +44,50 @@
             display: inline-block;
             margin-top: 3px;
         }
+
+        /* Tampilan pilihan Validation */
+        .validation-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            min-height: 48px;
+            padding: 8px 5px;
+            border: 1px solid;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .validation-option input {
+            accent-color: currentColor;
+        }
+
+        .validation-notyet {
+            color: #dc3545;
+            background: #fff0f0;
+            border-color: #ffb3b3;
+        }
+
+        .validation-done {
+            color: #198754;
+            background: #effbf3;
+            border-color: #a3e6b8;
+        }
+
+        .validation-notmatch {
+            color: #b77900;
+            background: #fff8df;
+            border-color: #f5d36b;
+        }
+
+        .validation-option:has(input:checked) {
+            border-width: 2px;
+            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.08);
+        }
+
+
     </style>
     <div class="app-content-header py-3">
         <div class="container-fluid">
@@ -759,5 +803,110 @@
             </div>
         </div>
     </div>
+
+
+
+<!-- Modal Update Validation -->
+<div class="modal fade" id="modalUpdateValidation" tabindex="-1"
+    aria-labelledby="modalUpdateValidationLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 550px;">
+        <div class="modal-content border-0 shadow-lg">
+
+            <div class="modal-header bg-white">
+                <h5 class="modal-title fw-bold" id="modalUpdateValidationLabel">
+                    <i class="fas fa-clipboard-check text-primary me-2"></i>
+                    Update Validation
+                </h5>
+                <button type="button" class="btn-close"
+                    data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-3">
+                <input type="hidden" id="validation_preparation_id">
+
+                <!-- Informasi Department dan Checklist -->
+                <div class="p-3 rounded mb-3"
+                    style="background:#e8f2ff;">
+                    <div class="row mb-1">
+                        <div class="col-4 fw-bold">Departement</div>
+                        <div class="col-8">
+                            : <span id="modal_validation_department"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 fw-bold">Checklist</div>
+                        <div class="col-8">
+                            : <span id="modal_validation_checklist"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pilihan Status -->
+                <label class="form-label fw-bold mb-2">
+                    Pilih Status Validation <span class="text-danger">*</span>
+                </label>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="validation-option validation-notyet">
+                            <input type="radio" name="modal_validation_status"
+                                value="0">
+                            <span>Not Yet</span>
+                        </label>
+                    </div>
+
+                    <div class="col-4">
+                        <label class="validation-option validation-done">
+                            <input type="radio" name="modal_validation_status"
+                                value="1">
+                            <span>Done</span>
+                        </label>
+                    </div>
+
+                    <div class="col-4">
+                        <label class="validation-option validation-notmatch">
+                            <input type="radio" name="modal_validation_status"
+                                value="2">
+                            <span>Not Match</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Remarks -->
+                <div id="modal_validation_remarks_wrapper"
+                    style="display:none;">
+                    <label for="modal_validation_remarks"
+                        class="form-label fw-bold">
+                        Remarks <span class="text-danger">*</span>
+                    </label>
+
+                    <textarea class="form-control"
+                        id="modal_validation_remarks"
+                        rows="4"
+                        maxlength="2000"
+                        placeholder="Masukkan remarks/alasan Not Match..."></textarea>
+
+                    <small class="text-danger mt-2 d-block">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Remarks wajib diisi untuk status Not Match.
+                    </small>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary"
+                    data-bs-dismiss="modal">Batal</button>
+
+                <button type="button"
+                    class="btn btn-primary save-validation-modal">
+                    <i class="fas fa-save me-1"></i> Simpan
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
     @include('script.qco.index')
 @endsection

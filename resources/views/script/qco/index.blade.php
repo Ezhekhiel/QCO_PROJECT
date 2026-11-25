@@ -178,69 +178,121 @@
                 }
             });
         });
-        // Event listener untuk tombol toggle validation
-        $(document).on('click', '.toggle-validation', function() {
-            let button = $(this);
-            let id = button.data('id');
-            let newStatus = button.data('status'); // 1 (true) atau 0 (false)
-            if (!isProduction) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Hanya department produksi yang bisa update status.',
-                    icon: 'error'
-                });
-                button.prop('disabled', false);
-                return false
-            }
-            // Konfirmasi atau langsung eksekusi AJAX
-            $.ajax({
-                url: `/QCO-preparation/${id}/validation`, // Sesuaikan dengan route Anda
-                type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'), // Token CSRF Laravel
-                    validation: newStatus
-                },
-                beforeSend: function() {
-                    button.prop('disabled', true); // Disable tombol sementara proses
-                },
-                success: function(response) {
-                    if (response.success) {
-                        Swal.fire({
-                            title: 'Berhasil!',
-                            text: response.message ||
-                                'Status validation berhasil diperbarui!',
-                            icon: 'success',
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            // Cek apakah ada fungsi fetch/load data tabel, jika ada panggil, jika tidak reload halaman
-                            if (typeof fetchTableData === 'function') {
-                                fetchTableData();
-                                button.prop('disabled', false);
-                            } else {
-                                location.reload(); // Refresh halaman
-                            }
-                        });
-                    } else {
-                        Swal.fire({
-                            title: 'Gagal!',
-                            text: response.message || 'Terjadi kesalahan.',
-                            icon: 'error'
-                        });
-                        button.prop('disabled', false);
-                    }
-                },
-                error: function(xhr) {
-                    console.error(xhr.responseText);
+        
+        
+    
+    // Tampilkan atau sembunyikan Remarks
+    $(document).on('change', 'input[name="modal_validation_status"]', function() {
+        if (Number($(this).val()) === 2) {
+            $('#modal_validation_remarks_wrapper').show();
+        } else {
+            $('#modal_validation_remarks_wrapper').hide();
+            $('#modal_validation_remarks').val('');
+        }
+    });
+
+    // Buka popup Update Validation
+    $(document).on('click', '.open-validation-modal', function() {
+        if (!isProduction) return;
+
+        let button = $(this);
+
+        $('#validation_preparation_id').val(button.data('id'));
+
+        $('#modal_validation_department').text(
+            decodeURIComponent(button.attr('data-department') || '')
+        );
+
+        $('#modal_validation_checklist').text(
+            decodeURIComponent(button.attr('data-checklist') || '')
+        );
+
+        let currentStatus = Number(button.data('validation'));
+
+        $('input[name="modal_validation_status"]').prop('checked', false);
+        $('input[name="modal_validation_status"][value="' + currentStatus + '"]')
+            .prop('checked', true);
+
+        $('#modal_validation_remarks').val(
+            decodeURIComponent(button.attr('data-remarks') || '')
+        );
+
+        $('input[name="modal_validation_status"]:checked').trigger('change');
+
+        bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('modalUpdateValidation')
+        ).show();
+    });
+
+    // Simpan Validation dari popup
+    $(document).on('click', '.save-validation-modal', function() {
+        let button = $(this);
+        let id = $('#validation_preparation_id').val();
+        let validation = Number(
+            $('input[name="modal_validation_status"]:checked').val()
+        );
+        let remarks = $('#modal_validation_remarks').val().trim();
+
+        if (!isProduction) {
+            Swal.fire('Error!', 'Hanya department PRODUCTION yang bisa update status.', 'error');
+            return;
+        }
+
+        if (validation === 2 && remarks === '') {
+            Swal.fire(
+                'Remarks wajib diisi!',
+                'Silakan isi alasan sebelum menyimpan status Not Match.',
+                'warning'
+            );
+            $('#modal_validation_remarks').focus();
+            return;
+        }
+
+        $.ajax({
+            url: `/QCO-preparation/${id}/validation`,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content'),
+                validation: validation,
+                validation_remarks: remarks
+            },
+            beforeSend: function() {
+                button.prop('disabled', true).html('Saving...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('modalUpdateValidation')
+                    ).hide();
+
                     Swal.fire({
-                        title: 'Error!',
-                        text: 'Terjadi kesalahan pada server.',
-                        icon: 'error'
-                    });
-                    button.prop('disabled', false);
+                        title: 'Berhasil!',
+                        text: response.message,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => location.reload());
                 }
-            });
+            },
+            error: function(xhr) {
+                let message = 'Terjadi kesalahan saat menyimpan validation.';
+
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    message = Object.values(xhr.responseJSON.errors)[0][0];
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+
+                Swal.fire('Gagal!', message, 'error');
+            },
+            complete: function() {
+                button.prop('disabled', false).html(
+                    '<i class="fas fa-save me-1"></i> Save Validation'
+                );
+            }
         });
+    });
     });
 
     function renderPlanMasterTable() {
@@ -638,14 +690,17 @@
             completedItemsCount += (deptInfo.completed !== undefined ? Number(deptInfo.completed) : items
                 .length);
 
+
             if (items.length === 0) {
                 rowsHtml += `
-                <tr>
-                    <td class="align-middle fw-bold bg-white text-center" rowspan="1">${deptName}</td>
-                    <td class="text-muted fst-italic align-middle text-center">Belum ada checklist</td>
-                    <td class="text-muted fst-italic align-middle text-center">Tidak ada file</td>
-                </tr>
-            `;
+                    <tr>
+                        <td class="align-middle fw-bold bg-white text-center" rowspan="1">${deptName}</td>
+                        <td class="text-muted fst-italic align-middle text-center">Belum ada checklist</td>
+                        <td class="text-muted fst-italic align-middle text-center">Tidak ada file</td>
+                        <td class="text-muted fst-italic align-middle text-center">-</td>
+                    </tr>
+                `;
+        
             } else {
                 items.forEach(function(item, index) {
                     let data_files = item.preparation_file;
@@ -663,30 +718,56 @@
                         });
                         fileHtml = links.join('');
                     }
-                    var tdProduksi = '';
-                    let status_validation = '';
+                    
+                    
+                    let currentValidation = Number(item.validation ?? 0);
+                    let currentRemarks = item.validation_remarks || '';
 
-                    if (item.validation == '0' || item.validation == false) {
-                        // Belum validasi (Silang Merah / Not Yet) -> Bisa diklik untuk mengubah jadi Done
-                        status_validation = `
-                                <button type="button" class="btn btn-sm btn-light border-0 text-danger p-0 toggle-validation" data-id="${item.id}" data-status="1" title="Klik untuk ubah jadi Done">
-                                    <i class="fas fa-times-circle fa-lg"></i> <span class="ms-1 fw-bold">Not Yet</span>
-                                </button>
-                            `;
-                    } else {
-                        // Sudah validasi (Centang Hijau / Done) -> Bisa diklick untuk uncheck jadi Not Yet
-                        status_validation = `
-                                <button type="button" class="btn btn-sm btn-light border-0 text-success p-0 toggle-validation" data-id="${item.id}" data-status="0" title="Klik untuk ubah jadi Not Yet">
-                                    <i class="fas fa-check-circle fa-lg"></i> <span class="ms-1 fw-bold">Done</span>
-                                </button>
-                            `;
-                    }
+                    let validationLabels = {
+                        0: 'Not Yet',
+                        1: 'Done',
+                        2: 'Not Match'
+                    };
 
-                    tdProduksi += `
-                            <td class="align-middle text-center">
-                                <div class="d-flex flex-wrap justify-content-center align-items-center">${status_validation}</div>
-                            </td>
-                        `;
+                    let validationColors = {
+                        0: 'secondary',
+                        1: 'success',
+                        2: 'danger'
+                    };
+
+                    let statusLabel = validationLabels[currentValidation] || 'Not Yet';
+                    let statusColor = validationColors[currentValidation] || 'secondary';
+
+                    let tdProduksi = `
+                        <td class="align-middle text-center" style="min-width: 150px;">
+
+                            ${isProduction ? `
+                                <button type="button"
+                                    class="btn btn-sm btn-outline-${statusColor} open-validation-modal"
+                                    data-id="${item.id}"
+                                    data-validation="${currentValidation}"
+                                    data-remarks="${encodeURIComponent(currentRemarks)}"
+                                    data-department="${encodeURIComponent(deptName)}"
+                                    data-checklist="${encodeURIComponent(item.list)}"
+                                    <i class="fas fa-edit me-1"></i> ${statusLabel}
+                                </button>
+                            ` : `
+                                <span class="badge bg-${statusColor}">
+                                    ${statusLabel}
+                                </span>
+                            `}
+
+                            ${currentValidation === 2 && currentRemarks ? `
+                                <div class="small text-danger mt-1"
+                                    style="max-width: 180px; margin: auto; overflow-wrap: anywhere;">
+                                    ${$('<div>').text(currentRemarks).html()}
+                                </div>
+                            ` : ''}
+
+                        </td>
+                    `;
+
+
                     rowsHtml += `<tr>`;
                     if (index === 0) {
                         rowsHtml +=
