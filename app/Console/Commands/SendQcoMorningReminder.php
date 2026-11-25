@@ -21,7 +21,7 @@ class SendQcoMorningReminder extends Command
     }
 
     protected $signature = 'qco:send-morning-reminder';
-    protected $description = 'Kirim pengingat WhatsApp untuk QCO preparation pada H-3 s/d H-1 hari kerja (mengabaikan weekend & hari libur)';
+    protected $description = 'Kirim pengingat WhatsApp untuk QCO preparation pada H-3 s/d Hari H hari kerja (mengabaikan weekend & hari libur)';
 
     public function handle()
     {
@@ -40,13 +40,11 @@ class SendQcoMorningReminder extends Command
         }
 
         // Ambil daftar tanggal libur sekali saja agar efisien di dalam loop
-        // Rentang cukup lebar: dari 15 hari ke belakang sampai 15 hari ke depan dari hari ini
         $holidays = Holiday::whereBetween('holiday_date', [
             $today->copy()->subDays(15)->toDateString(),
             $today->copy()->addDays(15)->toDateString(),
         ])->pluck('holiday_date')->flip()->all();
 
-        // Rentang query awal kita beri buffer 7 hari ke depan agar QCO yang terhalang libur panjang tetap terjaring
         $queryMaxDate = $today->copy()->addDays(7)->toDateString();
 
         $qcoList = qco::with(['preparations', 'cell_info'])
@@ -56,7 +54,7 @@ class SendQcoMorningReminder extends Command
             ->get();
 
         if ($qcoList->isEmpty()) {
-            $msg = "Tidak ada kandidat jadwal QCO yang mendekati H-3 hari kerja.";
+            $msg = "Tidak ada kandidat jadwal QCO yang mendekati H-3 hari kerja s/d Hari H.";
             $this->info($msg);
             Log::info("QCO Reminder: " . $msg);
             return;
@@ -65,7 +63,7 @@ class SendQcoMorningReminder extends Command
         $masterLists = qco___preparation_list::with('department')->get();
 
         $reminderMessages = [];
-        $reminderMessages[] = "⚠️ *PENGINGAT PERSIAPAN QCO (H-3 HARI KERJA)* ⚠️";
+        $reminderMessages[] = "⚠️ *PENGINGAT PERSIAPAN QCO (H-3 s/d HARI H)* ⚠️";
         $reminderMessages[] = "Tanggal Hari Ini: " . $today->translatedFormat('d F Y');
         $reminderMessages[] = "----------------------------------------";
 
@@ -74,8 +72,11 @@ class SendQcoMorningReminder extends Command
         foreach ($qcoList as $qco) {
             $coDate = Carbon::parse($qco->change_over_date)->startOfDay();
 
-            // Dapatkan 3 tanggal kirim alert (H-3, H-2, H-1 hari kerja) sebelum change_over_date
-            // Array key = urutan hari kerja ke depan (1 = H-1 workday, 2 = H-2 workday, 3 = H-3 workday)
+            // Array key:
+            // 0 = Hari H (jika change_over_date adalah hari kerja)
+            // 1 = H-1 hari kerja
+            // 2 = H-2 hari kerja
+            // 3 = H-3 hari kerja
             $alertWorkdays = $this->getWorkdayAlertDates($coDate, 3, $holidays);
 
             $todayStr = $today->toDateString();
@@ -88,14 +89,16 @@ class SendQcoMorningReminder extends Command
                 }
             }
 
-            // Jika hari ini BUKAN salah satu dari H-3, H-2, atau H-1 hari kerja dari QCO ini, lewati
+            // Jika hari ini BUKAN salah satu dari Hari H, H-1, H-2, atau H-3 hari kerja, lewati
             if ($matchedWorkdayOffset === null) {
                 continue;
             }
 
             $cellName = $qco->cell_info->area ?? 'Cell ' . $qco->cell;
             $modelName = $qco->model;
-            $statusLabel = "H-{$matchedWorkdayOffset} Hari Kerja";
+            $statusLabel = $matchedWorkdayOffset === 0
+                ? "Hari H"
+                : "H-{$matchedWorkdayOffset} Hari Kerja";
 
             $uncompletedDepts = [];
 
@@ -161,13 +164,20 @@ class SendQcoMorningReminder extends Command
     }
 
     /**
-     * Mengembalikan array tanggal kirim alert mundur sebanyak $days hari kerja dari $targetDate.
-     * Contoh return: [1 => '2026-11-25', 2 => '2026-11-24', 3 => '2026-11-23']
+     * Mengembalikan array tanggal kirim alert:
+     * - key 0: Hari H (jika $targetDate adalah hari kerja)
+     * - key 1..$days: H-1 s/d H-$days hari kerja mundur dari $targetDate
      */
     protected function getWorkdayAlertDates(Carbon $targetDate, int $days, array $holidays): array
     {
         $cursor = $targetDate->copy()->startOfDay();
         $alertDates = [];
+
+        // Cek Hari H (offset 0): hanya masuk jika Hari H bukan weekend/libur
+        if (!$this->isNonWorkingDay($cursor, $holidays)) {
+            $alertDates[0] = $cursor->toDateString();
+        }
+
         $foundWorkdays = 0;
         $guard = 0;
 

@@ -108,8 +108,7 @@ class QcoService {
             $tanggalKapital = Str::upper((string) ($ketTanggal ?? ''));
             $headerMessage = "⚠️ *JADWAL QCO DI-RESCHEDULE UNTUK " . $tanggalKapital . "* ⚠️";
         } else {
-            $suffix = $text_status !== '' ? " (" . $text_status . ")" : "";
-            $headerMessage = "📢 *JADWAL ".$text_status." CHANGE OVER BARU DIBUAT" . $suffix . "* 📢";
+            $headerMessage = "📢 *JADWAL ".$text_status." CHANGE OVER BARU DIBUAT* 📢";
         }
 
         $area = $qco->cell_info?->area ?? '-';
