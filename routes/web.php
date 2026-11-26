@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/whatsapp/sync', [WhatsappController::class, 'syncGroups'])->name('whatsapp.sync');
 
     Route::get('/test', [testController::class, 'test']);
+    Route::get('/testOverDue', [testController::class, 'testOverDue']);
 
 });
 
