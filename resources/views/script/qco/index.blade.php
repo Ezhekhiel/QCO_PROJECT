@@ -709,23 +709,21 @@
                     const isGuest = @json(auth()->guest());
 
                     if (data_files && data_files.length > 0) {
-                        let links = [];
-                        data_files.forEach(function(fileObj, index2) {
-                            let fileUrl = `/data_qco/${fileObj.file}`;
-
-                            if (!isGuest) {
+                        if (isGuest) {
+                            fileHtml =
+                                `<span class="text-muted fst-italic">GUEST TIDAK BISA LIAT FILE</span>`;
+                        } else {
+                            let links = [];
+                            data_files.forEach(function(fileObj, index2) {
+                                let fileUrl = `/data_qco/${fileObj.file}`;
                                 links.push(`
                                     <a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2 me-1 mb-1" title="${fileObj.file}">
                                         <i class="fas fa-download"></i> File - ${index2 + 1}
                                     </a>
                                 `);
-                            } else {
-                                links.push(`
-                                    <span class="text-muted fst-italic">GUEST TIDAK BISA LIAT FILE</span>
-                                `);
-                            }
-                        });
-                        fileHtml = links.join('');
+                            });
+                            fileHtml = links.join('');
+                        }
                     }
 
 

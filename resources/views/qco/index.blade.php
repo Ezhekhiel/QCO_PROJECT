@@ -599,11 +599,15 @@
                                             <div class="col-3 text-center">
                                                 <span class="small text-muted d-block">STATUS</span>
                                                 <!-- Elemen Badge Status Dinamis -->
-
                                                 @auth
-                                                    <span id="info_status" onclick="updateStatusCancel()"
-                                                        class="badge bg-success px-2 py-1 text-white"
-                                                        style="cursor: pointer;">DONE</span>
+                                                    @if (auth()->user()->department?->nama === 'PRODUCTION')
+                                                        <span id="info_status" onclick="updateStatusCancel()"
+                                                            class="badge bg-success px-2 py-1 text-white"
+                                                            style="cursor: pointer;">DONE</span>
+                                                    @else
+                                                        <span id="info_status"
+                                                            class="badge bg-success px-2 py-1 text-white">DONE</span>
+                                                    @endif
                                                 @else
                                                     <span id="info_status"
                                                         class="badge bg-success px-2 py-1 text-white">DONE</span>

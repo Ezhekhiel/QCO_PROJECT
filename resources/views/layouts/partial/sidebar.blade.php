@@ -22,23 +22,6 @@
             <!--begin::Sidebar Menu-->
             <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="navigation"
                 aria-label="Main navigation" data-accordion="false" id="navigation">
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon bi bi-hdd-network"></i>
-                        <p>
-                            <i>QCO (Quick Change Over)</i>
-                            <i class="nav-arrow bi bi-chevron-right"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="{{ url('QCO') }}" class="nav-link">
-                                <i class="nav-icon bi bi-circle"></i>
-                                <p>Dashboard QCO</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
                 @auth
                     <li class="nav-item">
                         <a href="#" class="nav-link">
@@ -131,6 +114,24 @@
                             </ul>
                         </li>
                     @endif
+                @else
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon bi bi-hdd-network"></i>
+                            <p>
+                                <i>QCO (Quick Change Over)</i>
+                                <i class="nav-arrow bi bi-chevron-right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ url('QCO') }}" class="nav-link">
+                                    <i class="nav-icon bi bi-circle"></i>
+                                    <p>Dashboard QCO</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 @endauth
 
                 <!--end::Sidebar Menu-->
