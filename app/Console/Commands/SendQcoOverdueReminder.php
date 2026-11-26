@@ -79,7 +79,7 @@ class SendQcoOverdueReminder extends Command
         $messages = [];
 
         $messages[] = "⚠️ *QCO OVERDUE REMINDER* ⚠️";
-        $messages[] = "📅 Tanggal : " . $today->translatedFormat('d F Y');
+        $messages[] = "Tanggal : " . $today->translatedFormat('d F Y');
         $messages[] = "";
         $messages[] = "Terdapat QCO yang telah melewati jadwal namun *Actual Change Over* belum diinput.";
         $messages[] = "";
