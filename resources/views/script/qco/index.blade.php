@@ -178,121 +178,121 @@
                 }
             });
         });
-        
-        
-    
-    // Tampilkan atau sembunyikan Remarks
-    $(document).on('change', 'input[name="modal_validation_status"]', function() {
-        if (Number($(this).val()) === 2) {
-            $('#modal_validation_remarks_wrapper').show();
-        } else {
-            $('#modal_validation_remarks_wrapper').hide();
-            $('#modal_validation_remarks').val('');
-        }
-    });
 
-    // Buka popup Update Validation
-    $(document).on('click', '.open-validation-modal', function() {
-        if (!isProduction) return;
 
-        let button = $(this);
 
-        $('#validation_preparation_id').val(button.data('id'));
-
-        $('#modal_validation_department').text(
-            decodeURIComponent(button.attr('data-department') || '')
-        );
-
-        $('#modal_validation_checklist').text(
-            decodeURIComponent(button.attr('data-checklist') || '')
-        );
-
-        let currentStatus = Number(button.data('validation'));
-
-        $('input[name="modal_validation_status"]').prop('checked', false);
-        $('input[name="modal_validation_status"][value="' + currentStatus + '"]')
-            .prop('checked', true);
-
-        $('#modal_validation_remarks').val(
-            decodeURIComponent(button.attr('data-remarks') || '')
-        );
-
-        $('input[name="modal_validation_status"]:checked').trigger('change');
-
-        bootstrap.Modal.getOrCreateInstance(
-            document.getElementById('modalUpdateValidation')
-        ).show();
-    });
-
-    // Simpan Validation dari popup
-    $(document).on('click', '.save-validation-modal', function() {
-        let button = $(this);
-        let id = $('#validation_preparation_id').val();
-        let validation = Number(
-            $('input[name="modal_validation_status"]:checked').val()
-        );
-        let remarks = $('#modal_validation_remarks').val().trim();
-
-        if (!isProduction) {
-            Swal.fire('Error!', 'Hanya department PRODUCTION yang bisa update status.', 'error');
-            return;
-        }
-
-        if (validation === 2 && remarks === '') {
-            Swal.fire(
-                'Remarks wajib diisi!',
-                'Silakan isi alasan sebelum menyimpan status Not Match.',
-                'warning'
-            );
-            $('#modal_validation_remarks').focus();
-            return;
-        }
-
-        $.ajax({
-            url: `/QCO-preparation/${id}/validation`,
-            type: 'POST',
-            dataType: 'json',
-            data: {
-                _token: $('meta[name="csrf-token"]').attr('content'),
-                validation: validation,
-                validation_remarks: remarks
-            },
-            beforeSend: function() {
-                button.prop('disabled', true).html('Saving...');
-            },
-            success: function(response) {
-                if (response.success) {
-                    bootstrap.Modal.getOrCreateInstance(
-                        document.getElementById('modalUpdateValidation')
-                    ).hide();
-
-                    Swal.fire({
-                        title: 'Berhasil!',
-                        text: response.message,
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => location.reload());
-                }
-            },
-            error: function(xhr) {
-                let message = 'Terjadi kesalahan saat menyimpan validation.';
-
-                if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    message = Object.values(xhr.responseJSON.errors)[0][0];
-                } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                    message = xhr.responseJSON.message;
-                }
-
-                Swal.fire('Gagal!', message, 'error');
-            },
-            complete: function() {
-                button.prop('disabled', false).html(
-                    '<i class="fas fa-save me-1"></i> Save Validation'
-                );
+        // Tampilkan atau sembunyikan Remarks
+        $(document).on('change', 'input[name="modal_validation_status"]', function() {
+            if (Number($(this).val()) === 2) {
+                $('#modal_validation_remarks_wrapper').show();
+            } else {
+                $('#modal_validation_remarks_wrapper').hide();
+                $('#modal_validation_remarks').val('');
             }
         });
-    });
+
+        // Buka popup Update Validation
+        $(document).on('click', '.open-validation-modal', function() {
+            if (!isProduction) return;
+
+            let button = $(this);
+
+            $('#validation_preparation_id').val(button.data('id'));
+
+            $('#modal_validation_department').text(
+                decodeURIComponent(button.attr('data-department') || '')
+            );
+
+            $('#modal_validation_checklist').text(
+                decodeURIComponent(button.attr('data-checklist') || '')
+            );
+
+            let currentStatus = Number(button.data('validation'));
+
+            $('input[name="modal_validation_status"]').prop('checked', false);
+            $('input[name="modal_validation_status"][value="' + currentStatus + '"]')
+                .prop('checked', true);
+
+            $('#modal_validation_remarks').val(
+                decodeURIComponent(button.attr('data-remarks') || '')
+            );
+
+            $('input[name="modal_validation_status"]:checked').trigger('change');
+
+            bootstrap.Modal.getOrCreateInstance(
+                document.getElementById('modalUpdateValidation')
+            ).show();
+        });
+
+        // Simpan Validation dari popup
+        $(document).on('click', '.save-validation-modal', function() {
+            let button = $(this);
+            let id = $('#validation_preparation_id').val();
+            let validation = Number(
+                $('input[name="modal_validation_status"]:checked').val()
+            );
+            let remarks = $('#modal_validation_remarks').val().trim();
+
+            if (!isProduction) {
+                Swal.fire('Error!', 'Hanya department PRODUCTION yang bisa update status.', 'error');
+                return;
+            }
+
+            if (validation === 2 && remarks === '') {
+                Swal.fire(
+                    'Remarks wajib diisi!',
+                    'Silakan isi alasan sebelum menyimpan status Not Match.',
+                    'warning'
+                );
+                $('#modal_validation_remarks').focus();
+                return;
+            }
+
+            $.ajax({
+                url: `/QCO-preparation/${id}/validation`,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    validation: validation,
+                    validation_remarks: remarks
+                },
+                beforeSend: function() {
+                    button.prop('disabled', true).html('Saving...');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        bootstrap.Modal.getOrCreateInstance(
+                            document.getElementById('modalUpdateValidation')
+                        ).hide();
+
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: response.message,
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    }
+                },
+                error: function(xhr) {
+                    let message = 'Terjadi kesalahan saat menyimpan validation.';
+
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        message = Object.values(xhr.responseJSON.errors)[0][0];
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                        message = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire('Gagal!', message, 'error');
+                },
+                complete: function() {
+                    button.prop('disabled', false).html(
+                        '<i class="fas fa-save me-1"></i> Save Validation'
+                    );
+                }
+            });
+        });
     });
 
     function renderPlanMasterTable() {
@@ -700,26 +700,35 @@
                         <td class="text-muted fst-italic align-middle text-center">-</td>
                     </tr>
                 `;
-        
+
             } else {
                 items.forEach(function(item, index) {
                     let data_files = item.preparation_file;
                     let fileHtml = '<span class="text-muted fst-italic">Tidak ada file</span>';
 
+                    const isGuest = @json(auth()->guest());
+
                     if (data_files && data_files.length > 0) {
                         let links = [];
                         data_files.forEach(function(fileObj, index2) {
                             let fileUrl = `/data_qco/${fileObj.file}`;
-                            links.push(`
-                            <a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2 me-1 mb-1" title="${fileObj.file}">
-                                <i class="fas fa-download"></i> File - ${index2 + 1}
-                            </a>
-                        `);
+
+                            if (!isGuest) {
+                                links.push(`
+                                    <a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2 me-1 mb-1" title="${fileObj.file}">
+                                        <i class="fas fa-download"></i> File - ${index2 + 1}
+                                    </a>
+                                `);
+                            } else {
+                                links.push(`
+                                    <span class="text-muted fst-italic">GUEST TIDAK BISA LIAT FILE</span>
+                                `);
+                            }
                         });
                         fileHtml = links.join('');
                     }
-                    
-                    
+
+
                     let currentValidation = Number(item.validation ?? 0);
                     let currentRemarks = item.validation_remarks || '';
 

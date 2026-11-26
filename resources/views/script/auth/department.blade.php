@@ -18,12 +18,11 @@
                 contentType: false,
                 cache: false,
                 processData: false,
-                beforeSend: function() {
-                    $("#loading-spinner").show();
-                },
                 success: function(response) {
                     if (response.success) {
-                        $('#editDepartmentModal').modal('hide');
+                        bootstrap.Modal.getOrCreateInstance(
+                            document.getElementById('editDepartmentModal')
+                        ).hide();
                         Swal.fire({
                             title: 'Berhasil!',
                             text: response.message,
@@ -98,7 +97,9 @@
                 data: formData,
                 success: function(response) {
                     if (response.success) {
-                        $('#editDepartmentModal').modal('hide');
+                        bootstrap.Modal.getOrCreateInstance(
+                            document.getElementById('editDepartmentModal')
+                        ).hide();
                         Swal.fire({
                             title: 'Berhasil!',
                             text: response.message,

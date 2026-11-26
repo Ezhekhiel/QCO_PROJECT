@@ -33,6 +33,9 @@ Route::get('/', function () {
     return view('welcome');
 })->middleware(['auth', 'verified'])->name('main');
 
+Route::get('/QCO', [qcoDashboardController::class, 'index']);
+Route::post('/QCO/dataModal', [qcoDashboardController::class, 'dataModal'])->name('qco.dataModal');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -45,8 +48,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/cell-info/{id}', [CellInfoController::class, 'update'])->name('cell-info.update'); // Menggunakan POST + _method PUT
     Route::delete('/cell-info/{id}', [CellInfoController::class, 'destroy'])->name('cell-info.destroy');
 
-    Route::get('/QCO', [qcoDashboardController::class, 'index']);
-    Route::post('/QCO/dataModal', [qcoDashboardController::class, 'dataModal'])->name('qco.dataModal');
     Route::post('/QCO/update-actual-co', [qcoDashboardController::class, 'update_act_co'])->name('QCO.update-actual-co');
     Route::post('/QCO/cancelQCO', [qcoDashboardController::class, 'cancelQCO'])->name('QCO.cancelQCO');
     Route::post('/QCO/updateStatusCancel', [qcoDashboardController::class, 'updateStatusCancel'])->name('QCO.updateStatusCancel');

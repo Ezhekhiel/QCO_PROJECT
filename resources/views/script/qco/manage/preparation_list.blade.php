@@ -61,7 +61,9 @@
                 data: formData,
                 success: function(response) {
                     if (response.success) {
-                        $('#editListModal').modal('hide');
+                        var myModal = new bootstrap.Modal(document.getElementById(
+                            'editListModal'));
+                        myModal.hide();
                         Swal.fire({
                             title: 'Berhasil!',
                             text: response.message,

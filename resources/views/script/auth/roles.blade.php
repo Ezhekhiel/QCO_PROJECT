@@ -21,7 +21,9 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        $('#editDepartmentModal').modal('hide');
+                        var myModal = new bootstrap.Modal(document.getElementById(
+                            'editDepartmentModal'));
+                        myModal.hide();
                         Swal.fire({
                             title: 'Berhasil!',
                             text: response.message,
@@ -96,7 +98,8 @@
                 success: function(response) {
                     if (response.success) {
                         // Tutup modal
-                        $('#editRoleModal').modal('hide');
+                        var myModal = new bootstrap.Modal(document.getElementById('hide'));
+                        myModal.hide();
 
                         // Tampilkan pesan sukses dengan SweetAlert
                         Swal.fire({
