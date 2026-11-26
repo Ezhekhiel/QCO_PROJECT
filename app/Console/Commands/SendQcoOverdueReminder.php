@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\qco;
+use App\Models\qco___preparation_list;
 use App\Models\Holiday;
 use App\Services\WhatsappService;
 use Carbon\Carbon;
